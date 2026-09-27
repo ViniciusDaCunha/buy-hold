@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { allocateContribution } from '../../src/domain/allocation';
-import { parseSimulationInput } from '../../src/domain/input';
-import { evaluateValuationAndEligibility, type AssetAssessment } from '../../src/domain/valuation';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { allocateContribution } from '../../backend/src/domain/allocation';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { evaluateValuationAndEligibility, type AssetAssessment } from '../../backend/src/domain/valuation';
 
 function input(id = 'S01') {
   return parseSimulationInput(buildScenario(id)).input;

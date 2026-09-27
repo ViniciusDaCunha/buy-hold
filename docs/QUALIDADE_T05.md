@@ -6,7 +6,7 @@ decide preço, teto ou elegibilidade, que pertencem à T06.
 
 ## Contrato implementado
 
-`src/domain/quality.ts` avalia cada posição do snapshot validado sem I/O, relógio
+`backend/src/domain/quality.ts` avalia cada posição do snapshot validado sem I/O, relógio
 global ou mutação. O resultado contém Q e C como frações `bigint` exatas,
 cobertura em pontos-base, notas por bloco, evidências individuais, códigos de
 motivo e a indicação de suficiência dos dados para a etapa seguinte.

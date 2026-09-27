@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { InputError } from '../../src/domain/errors';
-import { decimalRatio, marketValue, MAX_CENTS, parseBrl, parseCents, purchaseCost } from '../../src/domain/money';
+import { InputError } from '../../backend/src/domain/errors';
+import { decimalRatio, marketValue, MAX_CENTS, parseBrl, parseCents, purchaseCost } from '../../backend/src/domain/money';
 
 describe('entrada monetária exata', () => {
   it.each([['0,01', 1n], ['500', 50000n], ['1.234,5', 123450n], [' 1.000.000,00 ', 100000000n]])('converte %s', (input, cents) => {

@@ -1,13 +1,13 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
-import { App } from '../../src/web/App';
-import { buildScenario } from '../../fixtures/scenarios';
-import { parseSimulationInput } from '../../src/domain/input';
-import { simulateContribution } from '../../src/application/simulation';
-import { createSha256DecisionId } from '../../src/adapters/decision-id';
+import { App } from '../../frontend/src/web/App';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { simulateContribution } from '../../backend/src/application/simulation';
+import { createSha256DecisionId } from '../../backend/src/adapters/decision-id';
 
 const analyze = async () => {
-  fireEvent.click(screen.getByRole('button', { name: 'Analisar aporte' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Simular aporte' }));
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/Proposta pronta|Sem compras/));
 };
 
@@ -19,30 +19,34 @@ it('mostra compra, evidências e motivos ao selecionar ativos', async () => {
   expect(within(purchases).getByRole('columnheader', { name: 'Teto' })).toBeInTheDocument();
   expect(within(purchases).getByRole('columnheader', { name: 'Custos' })).toBeInTheDocument();
   fireEvent.click(within(purchases).getByRole('button', { name: /IVVB11/ }));
-  const detail = screen.getByRole('region', { name: 'Detalhe da evidência' });
+  const detail = screen.getByRole('region', { name: 'Evidências do ativo' });
   expect(within(detail).getByRole('heading', { name: /IVVB11/ })).toBeInTheDocument();
   expect(detail).toHaveTextContent('Confiança');
   expect(detail).toHaveTextContent('Faixas');
   expect(detail).toHaveTextContent('não avaliado');
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar detalhes' }));
+  fireEvent.click(screen.getByRole('tab', { name: /Sem aporte/ }));
   const excluded = screen.getByRole('region', { name: /Ativos não selecionados/ });
   fireEvent.click(within(excluded).getByRole('button', { name: /SCHD/ }));
-  expect(within(detail).getByRole('heading', { name: /SCHD/ })).toBeInTheDocument();
-  expect(detail).toHaveTextContent('perfil não possui regra de compra suportada');
+  const excludedDetail = screen.getByRole('region', { name: 'Evidências do ativo' });
+  expect(within(excludedDetail).getByRole('heading', { name: /SCHD/ })).toBeInTheDocument();
+  expect(excludedDetail).toHaveTextContent('perfil não possui regra de compra suportada');
 });
 
 it('expõe ausências locais e pesos derivados do resultado, inclusive saldo e custos', async () => {
   render(<App />);
   fireEvent.change(screen.getByLabelText('Cenário fictício'), { target: { value: 'S06' } });
   await analyze();
+  fireEvent.click(screen.getByRole('tab', { name: /Sem aporte/ }));
   const excluded = screen.getByRole('region', { name: /Ativos não selecionados/ });
   fireEvent.click(within(excluded).getByRole('button', { name: /ITUB4/ }));
-  const detail = screen.getByRole('region', { name: 'Detalhe da evidência' });
+  const detail = screen.getByRole('region', { name: 'Evidências do ativo' });
   expect(detail).toHaveTextContent('Ausente');
   expect(detail).toHaveTextContent('Falta evidência crítica de solvência');
   const weights = screen.getByRole('table', { name: 'Pesos da carteira' });
   expect(within(weights).getByRole('columnheader', { name: 'Após compras simuladas' })).toBeInTheDocument();
   expect(within(weights).getByRole('row', { name: /Caixa/ })).toHaveTextContent('%');
-  expect(screen.getByText(/Custos e reserva de preço consomem caixa/)).toBeInTheDocument();
+  expect(screen.getAllByText(/Custos e reserva de preço consomem caixa/).length).toBeGreaterThan(0);
 });
 
 it('renderiza fonte HTML fictícia como texto inerte', async () => {

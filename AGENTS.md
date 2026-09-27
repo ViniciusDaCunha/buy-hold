@@ -83,7 +83,7 @@ Consultar apenas detalhes pertinentes à tarefa: manual ENG-01/02, COD, ARQ e §
 
 ## Organização e simplicidade
 
-Estrutura planejada: `src/domain/`, `src/application/`, `src/adapters/`, `src/cli/`, `src/web/`, `fixtures/`, `tests/`, `docs/`. Um projeto. Funções e módulos simples bastam; não impor interface para cada classe, limite artificial de linhas ou framework interno.
+Estrutura atual: `frontend/` contém a interface; `backend/src/` contém domínio, aplicação, adaptadores e CLI local; `backend/fixtures/` contém dados fictícios. `tests/`, `docs/` e configurações compartilhadas ficam na raiz. Um projeto. `backend/` não é um serviço HTTP. Funções e módulos simples bastam; não impor interface para cada classe, limite artificial de linhas ou framework interno.
 
 - Domínio puro: sem React, filesystem, rede, relógio global, aleatoriedade ou estado compartilhado mutável.
 - Aplicação recebe snapshot validado, política, carteira, aporte e data explícita.

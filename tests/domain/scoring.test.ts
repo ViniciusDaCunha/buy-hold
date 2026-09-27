@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { InputError } from '../../src/domain/errors';
-import { compareScore, scoreRule, scoreToNumber } from '../../src/domain/scoring';
-import { buildScenario } from '../../fixtures/scenarios';
-import { parseSimulationInput } from '../../src/domain/input';
+import { InputError } from '../../backend/src/domain/errors';
+import { compareScore, scoreRule, scoreToNumber } from '../../backend/src/domain/scoring';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { parseSimulationInput } from '../../backend/src/domain/input';
 
 const rule = (id: string, direction: 'H' | 'L' | 'B', anchors: readonly number[]) =>
   ({ id, direction, anchors, unit: 'ratio' as const });

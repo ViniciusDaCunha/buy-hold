@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { runCli } from '../../src/cli/cli';
+import { runCli } from '../../backend/src/cli/cli';
 
 it('S24: falha real de publicação não anuncia exportação concluída nem vaza erro interno', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'simulador-s24-'));

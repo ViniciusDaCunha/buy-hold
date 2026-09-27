@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { parseSimulationInput } from '../../src/domain/input';
-import { evaluateQuality } from '../../src/domain/quality';
-import { scoreToNumber, type ExactScore } from '../../src/domain/scoring';
-import { calculateSafetyMargin, evaluateValuationAndEligibility } from '../../src/domain/valuation';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { evaluateQuality } from '../../backend/src/domain/quality';
+import { scoreToNumber, type ExactScore } from '../../backend/src/domain/scoring';
+import { calculateSafetyMargin, evaluateValuationAndEligibility } from '../../backend/src/domain/valuation';
 
 const exact = (value: number): ExactScore => ({ numerator: BigInt(value), denominator: 1n });
 

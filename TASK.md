@@ -423,6 +423,31 @@ passou. `.nvmrc` fixa Node 22.11.0. Registro e limitação do checkout em
 
 Pronto quando: terceiro consegue reproduzir o resultado e distingue claramente planejamento, teste, simulação e capacidades ainda inexistentes.
 
+### Registro pós-entrega — interface V3 Premium
+
+Status em 27/09/2026: **concluído** para a referência V3 disponível em
+`docs/buyhold-wireframe-v3-premium.html`. O caminho
+`docs/buyhold-v3-premium-reference.html` citado no pedido não existia no
+workspace; os guias V3 apontam para o wireframe disponível. A refatoração
+criou um presenter sobre o resultado validado, navegação responsiva, cartão de
+decisão, páginas de carteira/estratégia, abas e detalhe modal. Domínio, caso de
+uso, contratos e serialização financeira não foram alterados. O Red inicial
+teve duas falhas comportamentais por navegação e estados V3 ausentes; o Green
+passou após a implementação. `npm test` passou com 317 testes em 21 arquivos;
+typecheck, lint, build e 10 testes Chromium passaram. Os testes visuais com
+snapshots em 1440×1100 e 390×844 passaram. Evidência e decisão ARQ-01 em
+`docs/REFATORACAO_V3.md`.
+
+Em seguida, o frontend foi reorganizado por responsabilidade: `App.tsx` segue
+como controlador; `app/AppShell.tsx` mantém a moldura; páginas e componentes
+foram separados em `features/contribution`, `features/portfolio` e
+`features/strategy`, cada componente com CSS próprio. Navegação, títulos, painéis
+e estados vazios compartilhados ficam em `shared/`; tokens e estilos globais
+ficam em `style/`. A aba selecionada permanece no controlador e somente a rota
+ativa é montada, sem IDs duplicados. `npm test` (318), typecheck, lint, build e 10 testes
+Chromium passaram depois da extração. Detalhes e ARQ-02 em
+`docs/REFATORACAO_V3.md`.
+
 ## 7. Gates e evidências
 
 Conforme TDD-02, antes de alterar código existente sem cobertura criar caracterização do que precisa ser preservado, que pode começar passando. Bug/comportamento novo exige Red próprio. Em refatoração pura usar testes existentes e completar lacunas relevantes, sem falha artificial.

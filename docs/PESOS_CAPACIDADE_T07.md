@@ -6,7 +6,7 @@ quantidades, responsabilidades da T08.
 
 ## Contrato implementado
 
-`src/domain/portfolio.ts` recebe um `SimulationInput` validado e devolve:
+`backend/src/domain/portfolio.ts` recebe um `SimulationInput` validado e devolve:
 
 - origem e total do orçamento investível;
 - posições, caixa e patrimônio antes do aporte;

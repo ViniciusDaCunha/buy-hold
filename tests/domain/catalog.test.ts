@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { profiles } from '../../src/domain/profiles';
+import { profiles } from '../../backend/src/domain/profiles';
 
 describe('catálogo da política fornecida', () => {
   it('contém oito aplicações suportadas e ETF de dividendos bloqueado', () => {

@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { createSha256DecisionId } from '../../src/adapters/decision-id';
-import { serializeSimulationResult } from '../../src/adapters/result-json';
-import { simulateContribution } from '../../src/application/simulation';
-import { formatSimulation, parseCliArgs, runCli } from '../../src/cli/cli';
-import { InputError } from '../../src/domain/errors';
-import { parseSimulationInput } from '../../src/domain/input';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { createSha256DecisionId } from '../../backend/src/adapters/decision-id';
+import { serializeSimulationResult } from '../../backend/src/adapters/result-json';
+import { simulateContribution } from '../../backend/src/application/simulation';
+import { formatSimulation, parseCliArgs, runCli } from '../../backend/src/cli/cli';
+import { InputError } from '../../backend/src/domain/errors';
+import { parseSimulationInput } from '../../backend/src/domain/input';
 
 describe('argumentos da CLI', () => {
   it('recebe aporte, cenário, data, destino e formato JSON explicitamente', () => {

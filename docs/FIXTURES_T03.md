@@ -6,10 +6,10 @@ fictícias e sem finalidade de recomendação real.
 
 ## Catálogo e contratos
 
-`src/domain/profiles.ts` registra oito aplicações suportadas e o perfil de ETF
+`backend/src/domain/profiles.ts` registra oito aplicações suportadas e o perfil de ETF
 de dividendos sem suporte de compra. Cada regra tem identificador, unidade,
 âncoras, bloco, peso, tipo de evidência, tratamento temporal e criticidade.
-`fixtures/scenarios.ts` copia as regras para a política do snapshot, com
+`backend/fixtures/scenarios.ts` copia as regras para a política do snapshot, com
 identificadores `<perfil>.<regra>` e `profileIds` explícitos. Nenhuma faixa depende
 de ticker. Os pesos de Q foram expandidos dos blocos da política; os de M
 permanecem separados. Rubricas usam a avaliação documentada 0/25/50/75/100,

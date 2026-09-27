@@ -1,0 +1,10 @@
+.impact-card h2{margin:0 0 15px;font-size:14px;font-weight:550}
+.impact-card>p{color:var(--muted);font-size:11px}
+.impact-item{margin:20px 0}
+.impact-item>div:first-child{display:flex;justify-content:space-between;gap:8px;font-size:11px}
+.impact-item span{color:var(--muted);text-align:right}
+.impact-track{position:relative;height:7px;margin-top:9px;border-radius:4px;background:#f0f3ed}
+.impact-track span{display:block;height:100%;border-radius:4px}
+.impact-track i{position:absolute;top:-3px;height:13px;border-left:2px solid #58705a}
+.impact-note{padding:12px;border-radius:7px;background:#f0f5eb;color:#4c644b!important}
+.impact-card .context-link{color:var(--primary)}

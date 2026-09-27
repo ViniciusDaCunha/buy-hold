@@ -1,0 +1,7 @@
+.asset-dialog{width:min(540px,calc(100% - 30px));max-height:90vh;padding:0;border:0;border-radius:17px;box-shadow:0 20px 80px #122e2733;color:var(--ink)}
+.asset-dialog::backdrop{background:#122e2755}
+.dialog-head{display:flex;justify-content:space-between;padding:24px;background:#e2eee5}
+.dialog-head h2{margin:0;font:400 30px var(--font-editorial)}
+.dialog-head button{align-self:start;min-width:44px;min-height:44px;border:0;background:transparent;font-size:20px}
+.asset-dialog .detail-panel{max-height:70vh;overflow-y:auto}
+@media(max-width:720px){.asset-dialog{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:14px}.asset-dialog .detail-panel{max-height:calc(100dvh - 190px)}}

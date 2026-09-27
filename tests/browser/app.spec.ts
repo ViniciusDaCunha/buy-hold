@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { runCli } from '../../src/cli/cli';
+import { runCli } from '../../backend/src/cli/cli';
 
 test('abre a aplicação local e informa que os dados são fictícios', async ({
   page,
@@ -8,19 +8,19 @@ test('abre a aplicação local e informa que os dados são fictícios', async ({
   await page.goto('/');
 
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Simulador de aportes' }),
+    page.getByRole('heading', { level: 1, name: 'Seu próximo aporte.' }),
   ).toBeVisible();
   await expect(page.getByLabel('Aviso de simulação')).toContainText(
     'Dados fictícios',
   );
-  await page.getByRole('button', { name: 'Analisar aporte' }).click();
+  await page.getByRole('button', { name: 'Simular aporte' }).click();
   await expect(page.getByRole('status')).toContainText('Proposta pronta');
   await expect(page.getByText('R$ 274,59', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Usar aporte de R$ 1.000' }).click();
   await expect(page.getByRole('status')).toContainText('desatualizado');
-  await page.getByRole('button', { name: 'Analisar aporte' }).click();
+  await page.getByRole('button', { name: 'Simular aporte' }).click();
   await expect(page.getByText('R$ 368,64', { exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Proposta de compras' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Distribua seu aporte em 5 ativos/ })).toBeVisible();
 });
 
 for (const width of [360, 768, 1280]) {
@@ -38,12 +38,14 @@ for (const width of [360, 768, 1280]) {
 
 test('detalha exclusão e baixa apenas a proposta atual', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Analisar aporte' }).click();
+  await page.getByRole('button', { name: 'Simular aporte' }).click();
   await expect(page.getByRole('status')).toContainText('Proposta pronta');
+  await page.getByRole('tab', { name: /Sem aporte/ }).click();
   const excluded = page.getByRole('region', { name: 'Ativos não selecionados' });
   await excluded.getByRole('button', { name: 'SCHD' }).click();
-  await expect(page.getByRole('region', { name: 'Detalhe da evidência' }))
+  await expect(page.getByRole('region', { name: 'Evidências do ativo' }))
     .toContainText('perfil não possui regra de compra suportada');
+  await page.getByRole('button', { name: 'Fechar detalhes' }).click();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Exportar JSON' }).click();
   const download = await downloadPromise;
@@ -70,7 +72,7 @@ test('CLI e navegador produzem o mesmo documento financeiro nos cenários web', 
   ] as const) {
     await page.getByLabel('Cenário fictício').selectOption(scenario);
     await page.getByLabel('Valor do aporte').fill(amount);
-    await page.getByRole('button', { name: 'Analisar aporte' }).click();
+    await page.getByRole('button', { name: 'Simular aporte' }).click();
     await expect(page.getByRole('status')).toContainText(/Proposta pronta|Sem compras/);
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Exportar JSON' }).click();
@@ -111,15 +113,47 @@ test('teclado valida, abre evidência e impede download desatualizado', async ({
   await expect(page.getByRole('button', { name: 'Exportar JSON' })).toBeDisabled();
 });
 
-for (const width of [360, 1280]) {
-  test(`tema escuro legível a ${width}px`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height: 900 });
-    await page.emulateMedia({ colorScheme: 'dark' });
+test('navegação móvel, abas e detalhe modal funcionam por teclado', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Navegação principal' });
+  await nav.getByRole('button', { name: 'Minha carteira' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Minha carteira.' })).toBeVisible();
+  await nav.getByRole('button', { name: 'Próximo aporte' }).click();
+  await page.getByRole('button', { name: 'Simular aporte' }).click();
+  await expect(page.getByRole('status')).toContainText('Proposta pronta');
+  const reasons = page.getByRole('tab', { name: 'Por trás da escolha' });
+  await reasons.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: /Sem aporte/ })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowLeft');
+  await expect(reasons).toHaveAttribute('aria-selected', 'true');
+  const purchase = page.getByRole('table', { name: 'Compras simuladas' }).getByRole('button', { name: /IVVB11/ });
+  await purchase.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Detalhe do ativo' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Detalhe do ativo' })).toBeHidden();
+  await expect(purchase).toBeFocused();
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await nav.getByRole('button', { name: 'Minha estratégia' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Minha estratégia.' })).toBeInViewport();
+});
+
+for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844 }]) {
+  test(`V3 Premium visual ${viewport.width}×${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
     await page.goto('/');
-    await page.getByRole('button', { name: 'Analisar aporte' }).click();
+    await page.getByRole('button', { name: 'Usar aporte de R$ 1.000' }).click();
+    await page.getByRole('button', { name: 'Simular aporte' }).click();
     await expect(page.getByRole('status')).toContainText('Proposta pronta');
+    await expect(page.getByRole('navigation', { name: 'Navegação principal' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(16, 21, 18)');
-    await page.screenshot({ path: testInfo.outputPath(`proposal-dark-${width}.png`), fullPage: true });
+    if (viewport.width === 390) {
+      const nav = page.getByRole('navigation', { name: 'Navegação principal' });
+      expect(await nav.evaluate(element => getComputedStyle(element).position)).toBe('fixed');
+      await expect(nav.getByRole('button', { name: 'Minha carteira' })).toBeVisible();
+    }
+    await expect(page).toHaveScreenshot(`v3-premium-${viewport.width}x${viewport.height}.png`, { animations: 'disabled' });
   });
 }

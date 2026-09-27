@@ -7,7 +7,7 @@ como resultado calculado.
 
 ## Estrutura e linguagem visual
 
-`src/web/components.tsx` contém componentes diretos para painel, formulário,
+`frontend/src/web/components.tsx` contém componentes diretos para painel, formulário,
 status, tabela e estado vazio. `App.tsx` compõe cabeçalho, aviso permanente,
 formulário, resumo, proposta, evidências, exclusões e pesos. A separação existe
 para reutilização imediata em T12/T13, sem criar biblioteca ou design system.

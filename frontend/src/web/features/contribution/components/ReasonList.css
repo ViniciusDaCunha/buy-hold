@@ -1,0 +1,3 @@
+.reason-list{padding-left:20px;font-size:12px;line-height:1.55}
+.reason-list li+li{margin-top:9px}
+.reason-list span{display:block;color:var(--muted)}

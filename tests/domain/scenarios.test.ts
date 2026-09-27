@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { boundaryCases, scenarioExpectations } from '../../fixtures/expectations';
-import { decimalRatio, marketValue } from '../../src/domain/money';
-import { parseSimulationInput } from '../../src/domain/input';
-import { readFixtureJson, serializeInput } from '../../src/adapters/fixture-json';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { boundaryCases, scenarioExpectations } from '../../backend/fixtures/expectations';
+import { decimalRatio, marketValue } from '../../backend/src/domain/money';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { readFixtureJson, serializeInput } from '../../backend/src/adapters/fixture-json';
 
 describe('builders S01–S24', () => {
   it('registra janelas econômicas de renda, crescimento e aderência conforme as fórmulas', () => {

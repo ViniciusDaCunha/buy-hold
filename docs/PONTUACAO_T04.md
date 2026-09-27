@@ -1,6 +1,6 @@
 # Pontuação gradual — T04
 
-Concluída em 15/09/2026. A implementação está em `src/domain/scoring.ts` e é
+Concluída em 15/09/2026. A implementação está em `backend/src/domain/scoring.ts` e é
 pura: não consulta relógio, rede, filesystem ou estado compartilhado.
 
 ## Contrato

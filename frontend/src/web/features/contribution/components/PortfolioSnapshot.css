@@ -1,0 +1,14 @@
+.portfolio-card.panel{background:var(--ink);border-color:var(--ink);color:#f4f7f1}
+.context-head{display:flex;justify-content:space-between;gap:8px}
+.context-head h2{margin:0 0 15px;font-size:14px;font-weight:550}
+.context-head span,.portfolio-card p{color:#b5c8bc;font-size:11px}
+.portfolio-value{display:block;margin:8px 0 4px;font-size:32px;font-weight:450;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.portfolio-stack{display:flex;gap:4px;height:9px;margin:24px 0 17px}
+.portfolio-stack span{border-radius:2px}
+.class-color--stocks{background:#619879}
+.class-color--fiis{background:#adc7a2}
+.class-color--etfs{background:#dcebe2}
+.allocation-row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:11px}
+.allocation-row span{display:flex;align-items:center;gap:7px}
+.class-key{display:inline-block;width:7px;height:7px;border-radius:2px}
+.portfolio-card .context-link{color:#d5e7d6}

@@ -1,0 +1,5 @@
+.asset-button{display:flex;align-items:center;gap:10px;min-width:130px;padding:0;border:0;background:transparent;color:var(--ink);text-align:left}
+.asset-button strong{display:block;font-size:13px}
+.asset-button small{display:block;max-width:260px;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.4}
+.asset-tile{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:9px;background:#f0f4ed;color:#36563e;font-size:10px}
+@media(max-width:720px){.asset-tile,.asset-button small{display:none}}

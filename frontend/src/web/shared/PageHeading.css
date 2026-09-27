@@ -1,0 +1,9 @@
+.page-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:34px}
+.page-heading .eyebrow{margin-bottom:8px}
+.page-heading h1{margin:0 0 10px;font:400 39px/1.18 var(--font-editorial);letter-spacing:-1.3px}
+.page-heading p:not(.eyebrow){margin-bottom:0;color:var(--muted);font-size:13px}
+.page-heading>.badge{background:transparent;border:1px solid var(--line)}
+.page-heading--subpage{display:block;margin-bottom:0}
+.subpage .page-heading h1{margin:0 0 10px;font:400 39px/1.18 var(--font-editorial);letter-spacing:-1.3px}
+.subpage .page-heading p:not(.eyebrow){margin-bottom:0;color:var(--muted);font-size:13px}
+@media(max-width:720px){.page-heading{margin-bottom:26px}.page-heading h1,.subpage .page-heading h1{font-size:36px}.page-heading>.badge{display:none}}

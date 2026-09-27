@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { InputError } from '../../src/domain/errors';
-import { parseSimulationInput } from '../../src/domain/input';
-import { analyzePortfolio } from '../../src/domain/portfolio';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { InputError } from '../../backend/src/domain/errors';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { analyzePortfolio } from '../../backend/src/domain/portfolio';
 
 function input(id = 'S01') {
   return parseSimulationInput(buildScenario(id)).input;

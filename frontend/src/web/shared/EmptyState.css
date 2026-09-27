@@ -1,0 +1,3 @@
+.empty-state{padding:30px;color:var(--muted);font-size:12px}
+.empty-state strong{display:block;color:var(--ink)}
+.empty-state__line{display:none}

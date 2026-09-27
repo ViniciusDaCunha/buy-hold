@@ -6,7 +6,7 @@ altera posições.
 
 ## Contrato implementado
 
-`src/domain/allocation.ts` recebe um `SimulationInput` validado e, opcionalmente,
+`backend/src/domain/allocation.ts` recebe um `SimulationInput` validado e, opcionalmente,
 avaliações já calculadas. O resultado contém:
 
 - origem e total exatos do orçamento;

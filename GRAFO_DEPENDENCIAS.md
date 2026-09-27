@@ -18,9 +18,9 @@ Esta revisão incorpora o manual à implementação, aos testes e aos gates. Nã
 
 Escopo mais recente prevalece: a interface web agora integra a primeira entrega, além do terminal. API real, persistência de posições, ordens, IA, dashboard histórico e rebalanceamento periódico ficam fora desta fase.
 
-## 2. Arquitetura mínima planejada
+## 2. Arquitetura mínima
 
-Um projeto TypeScript. React com Vite na interface, CLI local e um único núcleo de domínio compartilhado. Sem backend de negócio, PostgreSQL, Redis, Docker obrigatório ou serviços distribuídos. Dependências exatas e scripts serão fixados e verificados em T01.
+Um projeto TypeScript organizado em `frontend/` (React/Vite) e `backend/` (domínio, aplicação, adaptadores, fixtures e CLI local). A pasta `backend/` contém o motor executado no mesmo processo; não representa um serviço HTTP nem uma API. O navegador e a CLI usam o mesmo caso de uso. Sem backend de negócio remoto, PostgreSQL, Redis, Docker obrigatório ou serviços distribuídos.
 
 ```mermaid
 flowchart TD
@@ -34,7 +34,7 @@ flowchart TD
     Result --> CLI
 ```
 
-As setas acima representam fluxo de dados, não dependências de importação. Importações devem seguir: UI/CLI → aplicação → domínio; adaptadores implementam contratos definidos pela aplicação/domínio. Domínio não importa UI, Node, browser, filesystem, rede nem relógio global. O backend transacional será uma decisão posterior quando houver posições reais persistidas.
+As setas acima representam fluxo de dados, não dependências de importação. Importações devem seguir: UI/CLI → aplicação → domínio; adaptadores implementam contratos definidos pela aplicação/domínio. Domínio não importa UI, Node, browser, filesystem, rede nem relógio global. Um backend transacional será uma decisão posterior quando houver posições reais persistidas.
 
 ## 3. DAG de implementação
 

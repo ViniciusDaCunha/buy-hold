@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  root: mode === 'test' ? '.' : 'frontend',
   plugins: [react()],
   server: {
     host: '127.0.0.1',
@@ -15,4 +16,4 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     clearMocks: true,
   },
-});
+}));

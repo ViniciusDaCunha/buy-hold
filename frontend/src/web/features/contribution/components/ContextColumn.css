@@ -1,0 +1,8 @@
+.context-column{display:grid;gap:var(--space-6);min-width:0}
+.context-column .panel{padding:var(--space-6)}
+.context-column h2{margin:0 0 15px;font-size:14px;font-weight:550}
+.context-column .context-link{margin-top:12px;padding:4px 0;border:0;background:transparent;font-size:11px}
+.context-column .context-link:hover{text-decoration:underline}
+@media(max-width:1200px){.context-column{gap:20px}}
+@media(max-width:980px){.context-column{grid-template-columns:1fr 1fr;gap:18px}.guardrails{grid-column:1/-1}}
+@media(max-width:720px){.context-column{display:flex;flex-direction:column;gap:20px}.context-column .panel{width:100%}.impact-card{order:-1}}

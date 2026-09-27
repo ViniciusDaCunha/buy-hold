@@ -1,0 +1,4 @@
+.subpage{min-height:60vh}
+.subpage-panel{margin-top:28px;padding:var(--space-6)}
+.subpage-panel>p{color:var(--muted);font-size:12px}
+.portfolio-page{min-width:0}

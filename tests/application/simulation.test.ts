@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { createSha256DecisionId } from '../../src/adapters/decision-id';
-import { canonicalDecisionPayload, simulateContribution } from '../../src/application/simulation';
-import { parseSimulationInput } from '../../src/domain/input';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { createSha256DecisionId } from '../../backend/src/adapters/decision-id';
+import { canonicalDecisionPayload, simulateContribution } from '../../backend/src/application/simulation';
+import { parseSimulationInput } from '../../backend/src/domain/input';
 
 const dependencies = { createDecisionId: createSha256DecisionId };
 

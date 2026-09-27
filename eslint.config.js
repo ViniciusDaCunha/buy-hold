@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['coverage', 'dist', 'dist-cli', 'node_modules', 'playwright-report', 'test-results'],
+    ignores: ['coverage', 'dist', 'dist-cli', 'frontend/dist', 'node_modules', 'playwright-report', 'test-results'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -22,7 +22,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/domain/**/*.{ts,tsx}'],
+    files: ['backend/src/domain/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

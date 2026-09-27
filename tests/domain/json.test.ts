@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { readFixtureJson, serializeInput, serializeSnapshot, MAX_FIXTURE_BYTES } from '../../src/adapters/fixture-json';
-import { diagnose } from '../../src/application/diagnostics';
-import { parseSimulationInput } from '../../src/domain/input';
-import { InputError } from '../../src/domain/errors';
+import { readFixtureJson, serializeInput, serializeSnapshot, MAX_FIXTURE_BYTES } from '../../backend/src/adapters/fixture-json';
+import { diagnose } from '../../backend/src/application/diagnostics';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { InputError } from '../../backend/src/domain/errors';
 import { inputFixture } from './input-fixture';
 
 describe('fronteira JSON (S22)', () => {

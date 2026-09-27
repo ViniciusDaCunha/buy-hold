@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { scenarioExpectations } from '../../fixtures/expectations';
-import { buildScenario } from '../../fixtures/scenarios';
-import { createSha256DecisionId } from '../../src/adapters/decision-id';
-import { simulateContribution } from '../../src/application/simulation';
-import { parseSimulationInput } from '../../src/domain/input';
-import type { SimulationResult } from '../../src/domain/result';
+import { scenarioExpectations } from '../../backend/fixtures/expectations';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { createSha256DecisionId } from '../../backend/src/adapters/decision-id';
+import { simulateContribution } from '../../backend/src/application/simulation';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import type { SimulationResult } from '../../backend/src/domain/result';
 
 const dependencies = { createDecisionId: createSha256DecisionId };
 const quantities = (result: SimulationResult) => Object.fromEntries(result.purchases.map(row => [row.ticker, row.quantity]));

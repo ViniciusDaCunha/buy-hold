@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { parseSimulationInput } from '../../src/domain/input';
+import { parseSimulationInput } from '../../backend/src/domain/input';
 import { inputFixture } from './input-fixture';
 
 describe('vínculo de métricas ao perfil econômico', () => {

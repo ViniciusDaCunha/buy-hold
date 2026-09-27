@@ -39,6 +39,12 @@ S01 (padrão), S05 (todos inelegíveis), S06 (dados incompletos) e S08
 escolha um cenário e analise. Uma edição deixa o resultado anterior
 desatualizado até uma nova análise.
 
+A interface V3 organiza a proposta, as evidências e as premissas em abas;
+carteira e estratégia aparecem na navegação lateral ou, no celular, na barra
+inferior. As duas páginas são somente leitura. O detalhe de cada ativo mostra
+motivos, métricas, fontes e períodos. A composição e os snapshots visuais estão
+documentados em `docs/REFATORACAO_V3.md`.
+
 `npm run demo` inicia a mesma interface local. Para servir o bundle de produção,
 gere-o e execute o preview, também limitado a loopback:
 
@@ -110,7 +116,7 @@ fornecida **2026-09-11**, política `1.0` e fixture `synthetic-1.0`. Todos os
 preços, câmbio, indicadores, períodos, exposições, rubricas, cenários de valor,
 proventos e nomes de grupos são fictícios. A tabela abaixo descreve os valores
 iniciais; os dados observação a observação e as variações S01–S24 estão em
-[`fixtures/scenarios.ts`](fixtures/scenarios.ts) e
+[`backend/fixtures/scenarios.ts`](backend/fixtures/scenarios.ts) e
 [`docs/FIXTURES_T03.md`](docs/FIXTURES_T03.md).
 
 | Ativo | Perfil / classe | Quantidade | Preço fictício | Meta da posição |
@@ -203,15 +209,16 @@ do usuário e não entram nessa limpeza.
 ## Adicionar dados e extensões futuras
 
 Para adicionar um cenário fictício, altere o builder versionado em
-`fixtures/scenarios.ts`, valide a entrada com o schema de domínio e registre uma
-expectativa independente em `fixtures/expectations.ts` e nos testes de aceitação.
+`backend/fixtures/scenarios.ts`, valide a entrada com o schema de domínio e
+registre uma expectativa independente em `backend/fixtures/expectations.ts` e
+nos testes de aceitação.
 Os valores esperados devem ser calculados a partir dos contratos, não copiados da
 saída do motor. Dados novos não exigem mudar o algoritmo se já respeitarem os
 perfis e contratos existentes.
 
 Os pontos atuais de extensão são o adaptador de JSON/fixtures em
-`src/adapters/fixture-json.ts`, o caso de uso compartilhado em
-`src/application/simulation.ts` e os adaptadores separados da CLI e do navegador.
+`backend/src/adapters/fixture-json.ts`, o caso de uso compartilhado em
+`backend/src/application/simulation.ts` e os adaptadores separados da CLI e do navegador.
 Uma futura fonte de mercado deve entrar por um adaptador que registre origem,
 unidade, moeda, data e versão, e passe pela validação existente antes do caso de
 uso. Persistir posições exigirá uma fronteira de armazenamento e contratos de
@@ -221,10 +228,18 @@ apresentá-las como capacidade pronta.
 
 ## Estrutura
 
-- `src/domain/`: validação e regras puras;
-- `src/application/`: caso de uso compartilhado;
-- `src/adapters/`: identidade, fixtures/JSON e efeitos locais;
-- `src/cli/` e `src/web/`: interfaces;
-- `fixtures/`: dados e expectativas fictícias versionados;
+- `frontend/src/web/app/`: shell React e navegação da aplicação;
+- `frontend/src/web/features/`: páginas e componentes de aporte, carteira e estratégia, cada componente com CSS próprio;
+- `frontend/src/web/shared/` e `frontend/src/web/style/`: componentes compartilhados, tokens e estilos globais;
+- `frontend/`: documento HTML servido pelo Vite;
+- `backend/src/domain/`: validação e regras puras;
+- `backend/src/application/`: caso de uso compartilhado pelo navegador e pela CLI;
+- `backend/src/adapters/`: identidade, fixtures/JSON e efeitos locais;
+- `backend/src/cli/`: interface de terminal local;
+- `backend/fixtures/`: dados e expectativas fictícias versionados;
 - `tests/`: domínio, aplicação, UI, integração, aceitação e navegador;
-- `docs/`: política, contratos, decisões e evidências por tarefa.
+- `docs/`: política, contratos, decisões e evidências por tarefa;
+- raiz: `package.json`, lockfile e configurações compartilhadas do projeto.
+
+`backend/` organiza o motor local e a CLI; não é um serviço HTTP nem uma API.
+O navegador importa o mesmo caso de uso para preservar a paridade de resultados.

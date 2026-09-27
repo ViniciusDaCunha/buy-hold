@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { App } from '../../src/web/App';
-import { simulateContribution } from '../../src/application/simulation';
-import type { SimulationResult } from '../../src/domain/result';
-import { InputError } from '../../src/domain/errors';
+import { App } from '../../frontend/src/web/App';
+import { simulateContribution } from '../../backend/src/application/simulation';
+import type { SimulationResult } from '../../backend/src/domain/result';
+import { InputError } from '../../backend/src/domain/errors';
 
-const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Analisar aporte' }));
+const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Simular aporte' }));
 const amount = (value: string) => fireEvent.change(screen.getByLabelText('Valor do aporte'), { target: { value } });
 
 it('valida aporte, usa atalhos e recalcula 500/1000 no motor real', async () => {
@@ -15,13 +15,13 @@ it('valida aporte, usa atalhos e recalcula 500/1000 no motor real', async () => 
   fireEvent.click(screen.getByLabelText('Usar aporte de R$ 500')); submit();
   await screen.findByText('R$ 274,59');
   expect(screen.getByRole('status')).toHaveTextContent('Proposta pronta');
-  expect(within(screen.getByRole('table', { name: 'Compras simuladas' })).getByRole('button', { name: 'ABEV3' })).toBeInTheDocument();
+  expect(within(screen.getByRole('table', { name: 'Compras simuladas' })).getByRole('button', { name: /ABEV3/ })).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('Usar aporte de R$ 1.000'));
   expect(screen.getByRole('status')).toHaveTextContent('desatualizado');
   expect(screen.getByRole('button', { name: 'Exportar JSON' })).toBeDisabled();
   submit();
   await screen.findByText('R$ 368,64');
-  expect(screen.getByText('Carteira somente leitura')).toBeInTheDocument();
+  expect(screen.getByText(/Carteira somente leitura/)).toBeInTheDocument();
 });
 
 it('seleciona cenário e explica sucesso sem compras', async () => {
@@ -57,7 +57,7 @@ it.each([new Error('SEGREDO stack carteira'), new InputError('MISSING_PRICE', 'q
     const alert = await screen.findByRole('alert');
     expect(alert).not.toHaveTextContent('SEGREDO');
     expect(alert).toHaveTextContent('simulacao');
-    expect(screen.getByRole('button', { name: 'Analisar aporte' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Simular aporte' })).toBeEnabled();
   },
 );
 

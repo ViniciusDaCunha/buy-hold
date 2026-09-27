@@ -6,7 +6,7 @@ não calcula pesos, capacidade ou quantidades, que pertencem às T07–T08.
 
 ## Contrato implementado
 
-`src/domain/valuation.ts` recebe o snapshot validado e as avaliações Q/C da T05.
+`backend/src/domain/valuation.ts` recebe o snapshot validado e as avaliações Q/C da T05.
 Para cada ativo retorna F, M, V, margem, teto, rótulo de preço, estado de
 elegibilidade, validação de execução quando aplicável, evidências e
 `reasonCodes`. As frações permanecem exatas em `bigint`; o teto monetário usa

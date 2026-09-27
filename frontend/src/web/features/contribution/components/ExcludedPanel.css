@@ -1,0 +1,4 @@
+.excluded-list{margin:0;padding:10px 24px;list-style:none}
+.excluded-list>li{padding:13px 0;border-bottom:1px solid var(--line)}
+.text-button{border:0;background:transparent;color:var(--primary);font-weight:650;text-decoration:underline}
+.text-button[aria-pressed="true"]{background:var(--soft)}

@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { parseSimulationInput } from '../../src/domain/input';
-import { evaluateQuality } from '../../src/domain/quality';
-import { scoreToNumber } from '../../src/domain/scoring';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { evaluateQuality } from '../../backend/src/domain/quality';
+import { scoreToNumber } from '../../backend/src/domain/scoring';
 
 function evaluate(id = 'S01') {
   const parsed = parseSimulationInput(buildScenario(id));

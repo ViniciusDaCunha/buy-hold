@@ -3,8 +3,8 @@ import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { publishJsonExclusive } from '../../src/adapters/file-export';
-import { runCli } from '../../src/cli/cli';
+import { publishJsonExclusive } from '../../backend/src/adapters/file-export';
+import { runCli } from '../../backend/src/cli/cli';
 
 async function directory() {
   return mkdtemp(join(tmpdir(), 'simulador-t10-'));

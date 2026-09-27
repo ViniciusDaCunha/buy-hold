@@ -6,7 +6,7 @@ compras.
 
 ## Composição compartilhada
 
-`src/application/simulation.ts` expõe `simulateContribution`, usado igualmente
+`backend/src/application/simulation.ts` expõe `simulateContribution`, usado igualmente
 por futuros adaptadores de terminal e navegador. O caso de uso recebe:
 
 - `ValidatedInput`, com data, política, carteira e snapshot explícitos;
@@ -32,7 +32,7 @@ de posições, métricas, cotações, exposições ou regras não altera a ident
 Aporte, custos, câmbio, reserva, versões ou qualquer evidência relevante alteram
 o payload.
 
-`src/adapters/decision-id.ts` usa SHA-256 da Web Crypto, disponível nos runtimes
+`backend/src/adapters/decision-id.ts` usa SHA-256 da Web Crypto, disponível nos runtimes
 alvo Node 22 e navegador. O identificador tem formato `sha256:<64 hex>`. Não foi
 criado algoritmo criptográfico próprio; o id não é credencial nem prova contra
 adulteração. Mudança semântica do motor exige atualizar `engineVersion`.

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { parseSimulationInput } from '../../src/domain/input';
-import { InputError } from '../../src/domain/errors';
+import { parseSimulationInput } from '../../backend/src/domain/input';
+import { InputError } from '../../backend/src/domain/errors';
 import { inputFixture } from './input-fixture';
 
 describe('contrato de entrada', () => {

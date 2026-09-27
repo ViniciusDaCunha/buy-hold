@@ -1,7 +1,7 @@
 # Contratos e precisão — T02
 
-Concluída em 15/09/2026. Contratos puros em `src/domain/`; leitura de texto
-JSON em `src/adapters/fixture-json.ts`, sem filesystem. O caso de uso, a
+Concluída em 15/09/2026. Contratos puros em `backend/src/domain/`; leitura de texto
+JSON em `backend/src/adapters/fixture-json.ts`, sem filesystem. O caso de uso, a
 identidade da proposta e a publicação de arquivos pertencem a T09/T10.
 
 ## Entrada e erros
@@ -59,7 +59,7 @@ strings inteiras canônicas não negativas; números JSON não são aceitos como
 dinheiro. `serializeInput` converte explicitamente bigint em string;
 `readFixtureJson` revalida e converte de volta. `serializeSnapshot` conserva a
 entrada original para auditoria. O contrato tipado `SimulationResult`, incluindo
-evidências, compras e alocações, está em `src/domain/result.ts`; construção,
+evidências, compras e alocações, está em `backend/src/domain/result.ts`; construção,
 validação das invariantes da proposta e exportação completa cabem a T09/T10.
 
 `parseBrl` recebe texto pt-BR: `500`, `500,5`, `1.234,56`; aceita espaços externos.

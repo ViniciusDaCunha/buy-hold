@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
-import { buildScenario } from '../../fixtures/scenarios';
-import { createSha256DecisionId } from '../../src/adapters/decision-id';
-import { simulateContribution } from '../../src/application/simulation';
-import { parseSimulationInput } from '../../src/domain/input';
+import { buildScenario } from '../../backend/fixtures/scenarios';
+import { createSha256DecisionId } from '../../backend/src/adapters/decision-id';
+import { simulateContribution } from '../../backend/src/application/simulation';
+import { parseSimulationInput } from '../../backend/src/domain/input';
 
 it('mede o núcleo de nove ativos após aquecimento, sem inicialização ou I/O', async () => {
   const validated = parseSimulationInput(buildScenario('S01'));
