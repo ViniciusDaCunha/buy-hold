@@ -1,461 +1,460 @@
-# Plano de implementação — motor de aportes com exemplos
-
-Versão 2.3 · 25/09/2026 · T00–T15 concluídas.
-
-## 1. Resultado esperado
-
-Uma aplicação local em TypeScript, com CLI e uma tela React, recebe um aporte variável em reais, avalia dados fictícios, distribui compras em unidades inteiras e apresenta evidências. As mesmas entradas geram a mesma proposta nas duas interfaces. Nenhuma proposta executa ou registra compras.
-
-Usar `AGENTS.md` como regras de implementação e `GRAFO_DEPENDENCIAS.md` como ordem de dependências. Referências de origem: política do motor v1.0, requisitos RF-01–16/RNF-01–13 definidos na conversa, wireframe, `MANUAL_PADRAO_ENGENHARIA(1).md` v1.0 e `PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS(2).md` v1.0, ambos fornecidos e lidos. As seções seguintes tornam o plano utilizável sem depender da conversa.
-
-Não começar integrações reais enquanto esta fase estiver em execução. A criação destes documentos não representa implementação, teste ou validação financeira concluídos.
-
-## 1.1 Aplicação normativa e decisões
-
-O manual define práticas comuns; o catálogo especializa P3/P1. `TASK.md` define entregas e adaptações de escopo, mas não dispensa obrigações de engenharia. Instruções do usuário e permissões vigentes prevalecem. Se existir código ao iniciar, inspecioná-lo e preservar padrões úteis antes de criar estrutura nova (ENG-02/COD-02).
+# Plano de tarefas — gestão da carteira e integração de dados
 
-| Grupo do manual | Exigência nesta fase | Evidência suficiente |
-|---|---|---|
-| ENG-01/02; COD-01/02; ARQ-01/02 | Menor mudança coerente, reutilização, decisão curta para complexidade adicional | Revisão do código/diff e nota apenas quando necessária |
-| TDD-01–05 | Red → Green → Refactor para lógica; caracterização antes de alterar comportamento existente sem cobertura | Resumo de teste e resultado, sem relatório por teste |
-| COD-03 | Tipagem estrita, validação runtime e dependências justificadas/controladas | Schemas, gates estáticos, lockfile e avaliação de alertas relevantes |
-| SEG-01–04 | Validar fronteiras; tratar texto como dado; não expor segredos ou sucesso falso | Testes negativos relevantes e inspeção de bundle/erros |
-| DAD-01/04; P3 | Dinheiro, datas, integridade, proveniência e snapshot | Oráculos independentes, invariantes e reprodução |
-| PERF-01; OPS-02/03 | Limites, medição, diagnóstico mínimo e execução/recuperação documentadas | Teste dos limites, erros com código/etapa e README |
-| Manual §§11–12 | Gates proporcionais, N/A distinto de exceção e pendências honestas | Checklist de conclusão por tarefa, sucinto |
+Versão 1.6 · 01/11/2026
 
-DAD-05 (migração/backup), autorização multiusuário, transações financeiras, retries remotos e jobs são N/A enquanto não houver esses comportamentos. Reavaliar se o escopo mudar. N/A não exige aprovação. Exceção já prevista no manual pode ser usada nas condições descritas; exceção nova contrária a obrigação deve expor regra, razão, risco, mitigação e condição de remoção ao responsável, sem autorizar a si mesmo. Falha conhecida de segredo, acesso indevido ou corrupção bloqueia a conclusão da parte afetada.
+Status geral: **INT-00, INT-01 e INT-02 concluídas; INT-03–INT-13 pendentes**
 
-## 2. Escopo fechado e adaptações explícitas
+Fonte de dependências: `GRAFO_DEPENDENCIAS.md`
 
-- Nove posições iniciais de uma unidade: ITUB4, BBSE3, WEGE3, ABEV3, HGLG11, KNCR11, XPML11, IVVB11 e SCHD.
-- Preços, séries, câmbio, rubricas, cenários de valuation, exposições e pesos são fictícios, identificados como tais. Não consultar API de mercado para preencher fixtures.
-- Motor aplica notas e limites da política aos dados fornecidos. Não estima valor intrínseco do zero: recebe valores conservador/base/favorável e proveniência `provided_fixture`.
-- BBSE3 usa avaliação das participações/holding conforme política, não ROIC industrial. WEGE3 industrial; ABEV3 consumo básico; ITUB4 banco; HGLG11 logística; XPML11 shopping; KNCR11 crédito; IVVB11 ETF amplo estratégico.
-- SCHD é contado nos pesos e exposições, mas recebe bloqueio de compra `UNSUPPORTED_PURCHASE_PROFILE`. Não simular sua aprovação pelo perfil de ETF amplo.
-- Regras históricas podem receber séries anuais/trimestrais fictícias ou agregados previamente calculados com período e método explícitos. A função de qualidade não pode tratar a nota pronta de um mock como se tivesse analisado métricas.
-- Sem histórico de estados, toda avaliação começa sem elegibilidade anterior; histerese somente se o cenário fornecer estado anterior e sua versão. Não presumir que uma posição já possuída era elegível plena.
-- Tela usa o motor implementado. Não reutilizar divisão 40/60, preços ou explicações fixas do protótipo como algoritmo.
-- Sem APIs reais, IA, banco, atualização de posições, ordens, login, taxas tributárias reais, dashboard histórico, agendamento ou rebalanceamento periódico.
+Escopo: implementar em fases os requisitos 7.1 e 7.2 do produto completo, preservando o MVP de fixtures e sem executar ordens
 
-## 3. Requisitos e rastreabilidade
+Alterações 1.6: INT-01 concluiu a avaliação no-go sem homologar fonte real; INT-02 concluiu contratos runtime versionados, invariantes negativas e casos TDD em `docs/CONTRATOS_INT02.md`.
 
-### Funcionais
+Alterações 1.5: INT-01 documentou planos, termos, rotas candidatas, uma consulta PTAX real e go/no-go independente para importação; fontes de mercado permanecem bloqueadas até cobertura autenticada e permissões de exibição/retenção comprovadas em `docs/VIABILIDADE_FONTES_INT01.md`.
 
-| ID | Requisito | Tarefas principais |
-|---|---|---|
-| RF-01 | Aporte BRL positivo com até duas casas, entrada inválida explicada | T02, T10, T12 |
-| RF-02 | Carteira, quantidades, caixa e pesos validados | T02, T03, T07 |
-| RF-03 | Dados fictícios com unidade, período, data e origem | T02, T03 |
-| RF-04 | Regras compatíveis com cada perfil | T03, T05, T06 |
-| RF-05 | Pontuação contínua de proximidade | T04 |
-| RF-06 | Qualidade e confiança com cobertura e ausência explícitas | T05 |
-| RF-07 | Valuation fornecido, múltiplos, margem e teto | T06 |
-| RF-08 | Elegibilidade e motivos de bloqueio | T06 |
-| RF-09 | Pesos/deficits após aporte | T07 |
-| RF-10 | Alocação sujeita a orçamento, classe e concentração | T08 |
-| RF-11 | Unidades inteiras, câmbio e custos | T02, T08 |
-| RF-12 | Redistribuição permitida e saldo | T08 |
-| RF-13 | Explicar compras e exclusões | T09, T13 |
-| RF-14 | Terminal e JSON com snapshot e versão | T09, T10, T13 |
-| RF-15 | Carteira original preservada | T07–T10, T14 |
-| RF-16 | Cenários executáveis sem serviços externos | T03, T14 |
-| RF-17 | Formulário web, atalhos 500/1000 e seleção de cenário | T11, T12 |
-| RF-18 | Estados inicial, inválido, analisando, pronto, vazio, desatualizado e erro | T12 |
-| RF-19 | Detalhes por ativo e pesos antes/depois/alvo, somente leitura | T13 |
-| RF-20 | Baixar JSON da proposta exibida, sem alterar posições | T13 |
+Alterações 1.4: INT-00 concluída com inventário do estado real, matriz de requisitos e decisões/gates registrados em `docs/ALINHAMENTO_INT00.md`; stack e comandos confirmados; persistência e fronteira de credenciais permanecem nos gates previstos.
 
-RF-17–20 são a extensão web explicitamente solicitada após os requisitos iniciais.
+## 1. Como usar este plano
 
-### Não funcionais
+- Executar tarefas em ordem topológica; uma tarefa só inicia quando todos os predecessores estiverem concluídos e aceitos.
+- As tarefas deste arquivo são planos, não evidência de implementação. Não marcar nada como concluído antes de execução e revisão.
+- IDs, dependências e critérios de saída devem permanecer alinhados ao grafo.
+- Ler `AGENTS.md`, requisitos e System Design vigentes; resolver eventuais divergências com o escopo antes de decidir persistência ou fronteira de execução. Consultar as seções aplicáveis do Manual e dos Perfis: ENG-01/02, TDD-01–05, COD-02/03, ARQ-01/02, SEG-01–04, DAD-01–05, OPS-01–03, DIST-01–10 e P3/P5; P1 para interface tocada. P4 é N/A para pull REST, salvo se forem adicionados eventos/webhooks.
+- Inspecionar o repositório e reaproveitar convenções, scripts, estrutura e mecanismo de persistência que existirem. INT-00 confirmou Node 22.11.0/npm 10.9.0, scripts do `package.json` e ausência de persistência de carteira; não inventar comando nem caminho.
+- Não iniciar integração real antes do spike confirmar cobertura, acesso, termos/licenças, identidade dos campos e tratamento seguro de credenciais.
+- Configuração numérica, período de atualização, retenção e precedência de fontes são decisões pendentes até haver evidência/aprovação registrada.
+- Distinguir registro manual de operações executadas da importação condicional de uma fonte externa. Nenhuma ordem é enviada pelo sistema; nenhuma operação importada entra na carteira sem conciliação e confirmação explícita.
 
-| ID | Requisito | Verificação |
-|---|---|---|
-| RNF-01 | Determinismo | Reexecução e permutação de ordem de input sem mudança na decisão, T09/T14 |
-| RNF-02 | Precisão monetária | Testes de centavos, FX, custos e overflow, T02/T08 |
-| RNF-03 | Separar domínio de I/O e interfaces | Revisão de importações, T01/T09 |
-| RNF-04 | TDD | Registro Red/Green dos comportamentos, todas as tarefas funcionais |
-| RNF-05 | Rastreabilidade | Dado → regra → nota → motivo → proposta, T05/T09 |
-| RNF-06 | Validar entradas | Erros locais/globais e schemas, T02–T06 |
-| RNF-07 | Execução offline após instalação | Exemplos e testes sem API externa, T14 |
-| RNF-08 | Política/configuração versionadas | Nenhuma regra por ticker fora do mapeamento de perfil, T03/T09 |
-| RNF-09 | Imutabilidade | Congelar inputs nos testes e comparar antes/depois, T07–T09 |
-| RNF-10 | Simplicidade | Um projeto e scripts documentados; sem serviços adicionais, T01/T15 |
-| RNF-11 | Cálculo <1 s para nove ativos | Medição monotônica após aquecimento, registrar máquina; não inclui inicialização/I/O, T14 |
-| RNF-12 | Adaptadores substituíveis | CLI/web compartilham entrada normalizada e caso de uso, T09/T14 |
-| RNF-13 | Simulação explícita | Avisos em CLI, web e JSON, T10–T14 |
-| RNF-14 | Acessibilidade/responsividade | Teclado, labels, foco e tamanhos de 360/768/1280 px, T11–T14 |
-| RNF-15 | Resultado ligado à entrada atual | Edição invalida; conclusão antiga não substitui nova, T12 |
-| RNF-16 | Segurança proporcional às fronteiras locais | Testes de texto malicioso, versão/payload inválido, limites e erros sem segredos, T02/T10/T13/T14 |
-| RNF-17 | Diagnóstico sem excesso de dados | Erros estruturados com etapa/código/versões, sem dump de carteira; detalhes locais controlados, T09/T10/T12 |
-| RNF-18 | Dependências e recuperação reproduzíveis | Necessidade/compatibilidade verificadas, lockfile, alertas avaliados e recuperação de exportação documentada, T01/T10/T15 |
+## 2. Critérios de aceitação transversais
 
-## 4. Contratos que devem ser implementados
+- Dados de uma recomendação são reproduzíveis com snapshot de entradas, origem/versão, regra financeira e versão do motor, sem buscar novamente o passado.
+- Cada valor usado possui semântica verificável: unidade, moeda, período econômico, timestamps de publicação/coleta e transformações/ajustes; dado que não tenha campo disponível explicita `unknown`, não uma data inventada.
+- Ausente, zero, inválido, vencido, conflitante e revisado pelo provedor são estados distintos.
+- Um estado de qualidade negativo (`missing-price`, `invalid`, `unavailable` etc.) **não pode** coexistir com valor monetário parcialmente preenchido; a validação de runtime DEVE rejeitar a combinação.
+- Identidade resolvida exige `issuerId` ou scheme estável reconhecido; ticker sozinho **nunca** basta.
+- Comparação de timestamps respeita a precisão do contrato; truncamento silencioso que iguala instantes distintos é proibido.
+- Cobertura parcial nunca é exibida como cobertura total. Um campo/ativo sem dado admissível segue bloqueio ou parcialidade explicitamente definidos pelo contrato/política.
+- Provedor lento/indisponível, 401/403, 404, 429, 5xx, JSON inválido, `null`, mudança de esquema e timeout não produzem valor plausível fabricado nem sucesso falso.
+- Nova coleta é segura para retry e não duplica estado lógico. Resultado remoto incerto e falhas parciais podem ser identificados e conciliados.
+- Credenciais de bolsai, FMP e demais fontes não aparecem no navegador, bundle, repositório, fixture ou log; testes normais não acessam serviço pago/dados reais. A chave FMP enviada como parâmetro de consulta deve ser redigida em logs, traces e diagnósticos.
+- O motor continua determinístico e sem I/O; fixtures permanecem disponíveis para desenvolvimento e regressão.
+- Nenhum ativo passa a receber recomendação real até os campos obrigatórios, regras temporais e confiança de dados serem aprovados para o seu perfil.
+- Compras, vendas, aportes e proventos registrados correspondem a eventos reais, confirmados pelo usuário. Uma sugestão, provento anunciado ou valor estimado não altera posição ou caixa.
+- Posição e saldo são reconstruíveis a partir da posição de abertura e dos eventos aceitos; projeções de valor/custo/exposição não são editadas como fonte de verdade.
+- Aporte externo, renda recebida e resultado realizado/não realizado são categorias separadas e não se duplicam quando um provento é reinvestido.
+- Conversão cambial, método de custo gerencial, tratamento de taxas e cálculo percentual de retorno têm definições explícitas e versionadas; o produto não declara apuração fiscal.
+- Exposição por setor/grupo distingue dados diretos de look-through de ETF/FII e sinaliza a parcela sem classificação ou componentes desatualizados.
+- Geração da análise/recomendação verifica atualidade dos dados e busca automaticamente os campos ausentes/vencidos quando a fonte e a política permitirem; serviço em background com o app fechado é opcional.
+- Importação de operações só é ativada após provar confiabilidade, segurança, termos e mecanismo de deduplicação; caso contrário, o fluxo manual continua suficiente.
 
-### 4.1 Entradas
+## 3. Fases e tarefas
 
-`SimulationInput`: schemaVersion, policyVersion, fixtureVersion, scenarioId, analysisAsOf, aporte BRL, portfolio, marketSnapshot, qualitativeAssessments, providedValuations, policy, costs e FX. Snapshot guarda origens e datas de cada observação. Data de análise é injetada; testes não dependem do dia atual.
+### Fase A — Descoberta e contratos
 
-Validar schemas na entrada, incluindo unidades, datas ISO válidas, âncoras ordenadas, pesos por classe/ativo coerentes, tickers únicos, preços positivos e moeda identificada. Quantidade zero é permitida para cenários de entrada nova; negativo e fração não. Lucro negativo é dado válido, mas torna P/L inaplicável. Não substituir ausente por zero.
+#### INT-00 — Alinhar escopo, documentos e arquitetura do projeto
 
-Configuração padrão dos exemplos: BRL é moeda-base, SCHD em USD, demais em BRL; mercado fracionário brasileiro usa unidades inteiras. Pesos de classes somam 100%, e pesos de ativos somam a meta da classe; caixa estratégico pode ter meta explícita. Reserva de emergência não é input. Não inventar pesos adequados ao usuário: pesos da fixture servem apenas ao teste.
+**Depende de:** —
 
-Validade usa `analysisAsOf`, última data de pregão fornecida e datas das observações. Não implementar calendário financeiro real nesta fase. Limites temporais da política permanecem nas configurações; testar fronteiras inclusive exatamente no vencimento.
+**Perfil:** P3, P5; ENG-02, DIST-01/02
 
-### 4.2 Precisão, câmbio, custos e limites de simulação
+**Status:** concluída em 01/11/2026; evidência em `docs/ALINHAMENTO_INT00.md`.
 
-Representar dinheiro como inteiros de centavos com `bigint` ou biblioteca decimal única. Se bigint, serializar como strings decimais no JSON; todos os consumidores convertem explicitamente. Câmbio e razões monetárias exigem aritmética decimal/racional, nunca `parseFloat` seguido de soma financeira.
+**Objetivo:** estabelecer o estado real do projeto e tornar coerentes os requisitos 7.1/7.2, as decisões de arquitetura e as fronteiras já implementadas antes de planejar persistência ou fontes externas.
 
-Documentar em T02: moeda original, taxa USD→BRL, precisão, arredondamento half-up para valor de mercado e ceil conservador para débito de compra/custos. Registrar custos fixos por ativo comprado, variáveis sobre valor comprado e câmbio/spread; custo fixo incide uma vez por linha agregada, não por unidade nem por tentativa de distribuição. Não cobrar remessa quando não houver compra em USD.
+**Trabalho:**
 
-Custo de compra usa reserva de preço de 0,5% da política; quando a reserva superaria o teto, usar o teto como limite, sem supor execução acima dele. Quantidade precisa caber no custo total reservado. Pesos simulados são marcados a preço do snapshot; custo/reserva consomem caixa, não criam valorização. Denominador de exposição pós-compra desconta custos estimados do patrimônio pós-aporte. Verificar limites novamente após essa dedução.
+1. Ler `ESCOPO_PRODUTO_MVP.md`, `AGENTS.md`, requisitos, System Design, política financeira e planos anteriores; inspecionar código/árvore, stack, módulos, testes, comandos e interfaces disponíveis.
+2. Registrar o que pertence ao simulador fictício e o que é evolução futura; não alterar nem apagar comportamento do MVP nesta iniciativa.
+3. Mapear os dados consumidos por qualidade, valuation, elegibilidade, alocação, justificativa e os dados necessários à carteira: posição de abertura, ativos, eventos, caixa, taxas, moedas, setor e grupo econômico.
+4. Identificar conflitos documentais sobre banco, monólito, backend/local process, scheduler e atualização da posição; decidir fonte de verdade ou registrar ADR curta antes de escolher implementação.
+5. Mapear a fronteira de credenciais: a UI não pode expor token de API; identificar mecanismo confiável existente ou lacuna arquitetural.
+6. Definir o que significa “atualização automática” neste produto: atualizar dados ausentes/vencidos ao solicitar análise/recomendação; não prometer coleta com o app fechado sem um processo ativo.
+7. Registrar campos ausentes, decisões financeiras sem método definido e requisitos que precisam de escolha; não preencher lacunas com valores presumidos.
 
-Tetos operacionais propostos para este simulador, não critérios financeiros: até 100 ativos por input, aporte máximo de R$ 1.000.000,00 e até 1 MiB para fixtures lidas pela CLI. Validar esses limites na fronteira e documentar mensagens. Isso impede loops/arquivos sem limite e não justifica rate limiter de rede. A fixture normal contém nove ativos. Limite de cinco compras e demais limites financeiros vêm da política.
+**Testes/verificação:** tabela requisito→consumidor→estado atual; caminhos e comandos citados foram confirmados; divergências de documentos listadas e resolvidas ou bloqueadoras; nenhuma implementação de rede ou mutação da carteira nesta tarefa.
 
-### 4.3 Erros e saída
+**Aceite:** inventário cobre 7.1/7.2, stack real ou ausente, interfaces, persistência e fonte de verdade pretendida; a distinção MVP/fases seguintes é inequívoca; conflitos e decisões em aberto têm responsáveis/gates. Nenhum comando ou caminho foi inventado.
 
-Erros globais (aporte, carteira, preço/FX necessário para valorar posição existente, metas incompatíveis ou versão não suportada) impedem gerar proposta. Falta de métrica de um candidato bloqueia/reduz a análise desse ativo conforme política; não impede analisar os demais se a carteira ainda puder ser valorada integralmente.
+**Conclusão (01/11/2026):** a matriz requisito→consumidor→estado, o inventário da stack/interfaces/persistência, a hierarquia documental e as decisões em aberto foram registrados em `docs/ALINHAMENTO_INT00.md`. Não foi implementado acesso de rede, persistência de carteira ou alteração de comportamento do MVP. INT-01 foi concluída como avaliação de viabilidade; os Gates B–G continuam condicionados às tarefas predecessoras.
 
-`SimulationResult`: schemaVersion, simulation=true, identificador determinístico da decisão, snapshots de inputs, evaluations, purchases, excludedAssets, allocationsBefore/After/Target, principalCents, feesCents, unallocatedCents e warnings. Metadados de duração ou exportação ficam fora da identidade da decisão.
+#### INT-01 — Validar fontes de dados e viabilidade de importação de operações
 
-Cada evidência: ruleId, observedValue, unit, anchors, score, applicability, source, period e reasonCode. Cada compra: ticker, currency, quantity, priceSnapshot, priceLimit, conversion, principal, fees, reservedTotal e reasons. Ausências relevantes não são escondidas por texto genérico.
+**Status (01/11/2026):** concluída como avaliação de viabilidade, com resultado no-go para recomendação real. Chamadas autenticadas Bolsai cobriram cotações/fundamentos de quatro ações e perfis de três FIIs (HTTP 200); rotas históricas, demonstrações e proventos testadas responderam HTTP 403. Moeda, frescor, identidade estável e licença/retenção não foram comprovados. FMP ficou sem chamadas por exigir aprovação escrita para a aplicação. PTAX serve apenas como referência após resolver precisão/fuso. Importação de operações não habilitada. Nenhuma fonte foi homologada. Evidências em `docs/VIABILIDADE_FONTES_INT01.md` e decisão em `docs/DECISAO_FONTES_DADOS.md`.
 
-Identidade da decisão: hash da serialização canônica de todas as entradas relevantes e versões, incluindo arredondamento/custos; ordenar ativos por identificador estável. Empates usam comparador explícito por identificador, sem dependência de locale do ambiente.
+**Depende de:** INT-00
 
-### 4.4 Diagnóstico, segurança e exportação
+**Perfil:** P5 + P3; OPS-01, SEG-02/03, DIST-02/03/04/09
 
-Formato mínimo de falha operacional: errorCode, etapa, scenarioId, schemaVersion e policyVersion; acrescentar decisionId quando existir. Mensagem de usuário explica ação possível sem stack trace ou snapshot completo. CLI retorna código de saída não zero em erro global; resultado sem compras é sucesso de cálculo. Não instalar plataforma de observabilidade. Duração fica em diagnóstico, fora da identidade financeira.
+**Objetivo:** homologar cobertura, semântica, acesso, licença, custo e confiabilidade por fonte, ativo e campo, além de decidir separadamente se existe uma fonte segura de operações realizadas.
 
-Identidade determinística não exige hashing no domínio puro: produzir payload canônico no núcleo/aplicação e calcular hash no adaptador com biblioteca/runtime estabelecido, consistente entre CLI/browser; não inventar algoritmo criptográfico. O id não é credencial nem prova contra manipulação.
+**Roteamento avaliado (nenhuma fonte homologada):** bolsai para ações e FIIs brasileiros; FMP para SCHD; Banco Central/PTAX para câmbio oficial. CVM e documentos de emissores/administradores são complementos avaliados por campo. Não presumir que qualquer API cobre todos os tickers, classes ou métricas.
 
-Exportação local: publicação de arquivo completo com prevenção de sobrescrita concorrente, nome determinístico ou explícito e contrato de repetição. Preferir rejeitar destino existente; não usar apenas “verificar existência → rename que sobrescreve”. Escolher em T10 mecanismo comprovado no filesystem suportado, por exemplo publicação atômica sem substituição a partir de temporário. Testar duas tentativas para mesmo destino, falha intermediária e limpeza de temporários. Não prometer persistência contra perda de energia sem garantir sync apropriado. Falha de exportação permite repetir exportação da mesma proposta sem recalcular ou modificar a carteira.
+**Trabalho:**
 
-A fixture é tratada como entrada não confiável para validação/renderização. Testar strings HTML/script como texto, JSON inválido, tamanho excedido e ausência de dependência crítica sem fallback permissivo. Caminho de arquivo da CLI é uma escolha local explícita, não um endpoint remoto. Não executar conteúdo ou construir comando shell a partir dele. Servidor local em loopback; sem credenciais no cliente.
+1. Consultar a documentação oficial vigente de bolsai e FMP e registrar data, endpoints atuais, autenticação, planos, limites, cobertura, esquemas, termos e permissões de uso/retenção.
+2. Testar tickers e campos da carteira ativa individualmente: ITUB4, BBSE3, WEGE3, ABEV3; HGLG11, KNCR11, XPML11; SCHD. Validar preço, histórico, moeda, fundamentos, demonstrações, dividendos/distribuições, perfil/custos e composição/look-through quando necessários.
+3. Para bolsai, verificar disponibilidade por ticker dos dados de ações, fundamentos, dividendos e FIIs. Confirmar semântica e data de cada campo, especialmente para bancos, holdings e FIIs.
+4. Para FMP, consultar plano, termos e cobertura documental; não chamar a API enquanto a autorização escrita exigida para integrar/exibir/reter não existir.
+5. Testar câmbio USD-BRL e fonte oficial BCB/PTAX; distinguir taxa de referência, fechamento e taxa executável. Cotação cambial comercial não substitui PTAX quando a regra pedir taxa oficial.
+6. Para cada campo, registrar origem preferencial e eventual fonte secundária. Só permitir fallback após comprovar mesma definição, unidade, moeda, período, base de ajuste e atualidade admissível; caso contrário, a divergência permanece explícita e pode bloquear o campo.
+7. Para CVM, B3 e documentos de emissores/fundos, confirmar identificadores, formato, frequência, licença/termos, limites, acesso automatizável, correções históricas e possibilidade de reter payload ou somente hash/referência.
+8. Verificar permissões de uso pessoal local, exibição na ferramenta e retenção de snapshots segundo os termos vigentes; não presumir que uso individual autoriza exibir ou persistir dados.
+9. Avaliar planos/preços, autenticação, limites, quotas, campos nulos, símbolos renomeados, respostas HTTP, headers de descontinuação e políticas de armazenamento. Registrar evidência datada, sem colocar chaves ou respostas restritas em commit/log.
+10. Avaliar importação de operações realizadas separadamente; não pressupor cobertura de corretora nem solicitar credenciais de corretora sem aprovação específica.
+11. Criar ou atualizar `docs/DECISAO_FONTES_DADOS.md` com matriz ativo × campo × provedor × endpoint × plano × permissão × estado; classificar importação de operações como habilitada ou fora do marco.
 
-### 4.5 Alocação
+**Testes/verificação:** teste exploratório descartável permitido sem TDD (TDD-04); validar exemplos contra schemas/OpenAPI e registrar a data da consulta. Não declarar integração pronta com base em uma resposta 200 ou na documentação promocional.
 
-Implementar seção 13 da política, nesta ordem: orçamento sem dupla contagem → patrimônio pós-aporte → déficits de classe → capacidade de cada ativo → elegibilidade/teto → prioridade por classe → limite global de linhas → distribuição proporcional com saturação → unidades inteiras → uso determinístico de sobras dentro da mesma classe.
+**Aceite:** matriz por campo/ativo contém fonte e endpoint comprovados, identificador, definição/unidade/moeda/período, timestamps, plano/termos, limites, armazenamento permitido e lacunas, incluindo composição look-through quando necessária. Bolsai e FMP não são intercambiáveis nem fallback global um do outro. A importação possui decisão independente de go/no-go. Nenhum ativo sem cobertura admissível recebe recomendação real.
 
-Orçamento é aporte + caixa tático/proventos explicitamente liberados, sem contar provento já no caixa duas vezes. Resultado preserva origem do orçamento. Classes sem candidatos mantêm sua parcela em caixa; não transferir automaticamente a outra classe. Manter controle separado de saldo por classe e consolidá-lo ao final.
+**Conclusão (01/11/2026):** matriz ativo × campo atualizada com status HTTP autenticados, schemas/campos, nulabilidade, limitações de identidade/moeda/tempo, planos e termos. O resultado é no-go para fontes de recomendação real e não habilita ingestão; importação de operações foi decidida separadamente como não habilitada. INT-01 está concluída como avaliação, e os bloqueios permanecem gates para INT-05.
 
-Se arredondamento proporcional gerar centavos residuais, usar maior resto e identificador estável sem ultrapassar déficit. Capacidade zero remove candidato de redistribuição. Recalcular custos a partir da linha agregada e preservar limite coletivo de 20% para elegíveis condicionais, calculado sobre débito reservado com custos (convenção conservadora desta fase). Novas posições não podem ser abertas por elegibilidade condicional.
+#### INT-02 — Especificar contratos canônicos de ativos, operações e dados financeiros
 
-Compra não pode agravar limite já excedido. Carteira inicialmente acima do limite não é configuração impossível por si só: bloquear aumentos e avaliar as demais possibilidades. Alvos incompatíveis com limites configurados são erro de configuração. Exposições indiretas dos ETFs devem ser fictícias mas explícitas; lacuna deve impedir afirmar concentração totalmente verificada.
+**Depende de:** INT-00, INT-01
 
-Heurística não garante ótimo global. Se nenhum lote inteiro atender às condições, aceitar caixa; nunca alterar faixa para forçar compra. Iterações precisam reduzir saldo ou remover candidato para assegurar término.
+**Status:** concluída em 01/11/2026; contratos e evidências em `backend/src/domain/contracts.ts`, `tests/domain/contracts.test.ts` e `docs/CONTRATOS_INT02.md`.
 
-## 5. Cenários obrigatórios
+**Perfil:** P3 + P5; TDD-03, DAD-01/04, DIST-02
 
-| Código | Cenário | Resultado esperado |
-|---|---|---|
-| S01 | Padrão, R$ 500 | Proposta válida; total explicado e orçamento fechado |
-| S02 | Mesma fixture, R$ 1.000 | Recalcular, preservar limites; não dobrar saída anterior |
-| S03 | Orçamento abaixo de toda unidade elegível | Nenhuma compra, saldo integral |
-| S04 | Todos caros | Nenhuma compra; preço justifica bloqueios |
-| S05 | Todos inelegíveis | Nenhuma compra; melhor relativo não ignora mínimos |
-| S06 | Métrica crítica ausente em candidato | Bloqueio identificado do candidato, demais analisados |
-| S07 | Cotação/FX ausente de posição existente | Erro global de valoração |
-| S08 | Posição acima de limite | Nenhum aumento da posição; sem venda automática |
-| S09 | Indicador perto do alvo | Nota intermediária verificável e não exclusão exata |
-| S10 | Lucro negativo/múltiplo inválido | Nunca interpretar como preço barato |
-| S11 | Dados vencidos | Bloqueio com motivo específico |
-| S12 | Custos e FX não nulos | Reserva suficiente e soma exata; usar candidato USD suportado sintético adicional no teste do alocador, sem liberar SCHD |
-| S13 | Condicional existente e candidato novo | Limite conjunto respeitado; entrada nova bloqueada |
-| S14 | Classe sem elegíveis | Preservar parcela em caixa |
-| S15 | Empate/ordem de entradas diferente | Mesma escolha determinística |
-| S16 | SCHD sem perfil de compra | Valor da posição incluído, aporte bloqueado |
-| S17 | CLI versus navegador | Mesmas decisões, centavos e reasonCodes |
-| S18 | Entrada alterada durante processamento | Resultado antigo não vira proposta atual |
-| S19 | Configuração inválida/versão desconhecida | Erro claro, sem proposta financeira |
-| S20 | Reexecução/exportação | Identidade igual; input original intacto |
-| S21 | Texto de origem com HTML/script | Renderizar como texto, sem executar conteúdo |
-| S22 | Payload excessivo/JSON inválido/limite monetário | Rejeição clara e limitada, sem trabalho sem limite |
-| S23 | Duas exportações para mesmo destino/falha parcial | Sem sobrescrita silenciosa ou artefato final incompleto |
-| S24 | Falha operacional | Código/etapa rastreáveis; sem segredo, stack na UI ou carteira completa em log |
+**Objetivo:** desacoplar o domínio dos fornecedores, definir eventos financeiros e tornar explícita a semântica de cada métrica usada na carteira e no motor.
 
-Cenários web expostos inicialmente: padrão, todos inelegíveis, dados incompletos e concentração excessiva. Demais casos pertencem aos testes/CLI. As fixtures têm expected outcomes independentes; saída do motor não é usada para gerar automaticamente os resultados esperados.
+**Trabalho:**
 
-## 6. Tarefas
+1. Definir schemas versionados para ativo/instrumento e classificação, composição de fundo, posição de abertura, evento financeiro, caixa por moeda, observação de mercado, documento-fonte, coleta, avaliação de qualidade, transformação/ajuste, snapshot da carteira e snapshot da recomendação (módulos simples, sem impor classes desnecessárias).
+2. Por observação, especificar ativo/identificador estável, campo semântico e campo original, valor original, valor normalizado, unidade, moeda, período econômico (`periodStart`, `periodEnd`, tipo anual/trimestral/TTM/spot), publicação, coleta/recebimento, fonte, endpoint/arquivo, referência do registro, hash permitido, versão de parser e estado.
+3. Definir separação temporal: instante de mercado, fechamento/validade do preço, período econômico, publicação do emissor, coleta local e revisão do provedor. Datas indisponíveis não podem ser inferidas do horário da chamada.
+4. Definir o contrato de operação com tipo, ativo, quantidade, preço, moeda, data do fato, custos, valor líquido/bruto, status (rascunho/importado pendente/confirmado/estornado) e origem/identificador externo quando houver. Distinguir aporte externo, compra, venda, provento recebido e custos.
+5. Definir valores ausentes e números com precisão/unidade; dinheiro usa decimal/unidades inteiras com escala explícita. Evitar conversões binárias para cálculos monetários.
+6. Criar dicionário campo→definição/fórmula/unidade/frequência/tipo de fonte; separar dado fornecido, derivado e ajustado. Métricas divergentes em definição permanecem distintas.
+7. Definir como identificar entidade e mudanças de ticker/nome com ID de emissor/fundo; preservar símbolos solicitados e retornados.
+8. Especificar a base de moeda da carteira e permitir ativos/caixa em BRL e moedas estrangeiras, mantendo valor original e conversão como campos separados.
+9. Versionar schemas e regras de compatibilidade para mudanças de payload e de formato de operações importadas.
 
-Todas seguem TDD para comportamento; regras detalhadas em `AGENTS.md`. Registrar evidência e status por tarefa. Não exigir commits artificiais de testes falhando, mas observar e registrar Red antes de Green.
+**Invariantes prescritivas obrigatórias (runtime):**
 
-### T00 — Consolidar fontes e decisões
+- Um snapshot/observação marcado como `missing-price`, `invalid`, `unavailable` ou equivalente **não pode** conter valor monetário parcialmente preenchido (`baseMarketValue`, `localMarketValue`, `priceObservationId` etc.). Qualquer combinação parcial inconsistente DEVE ser rejeitada.
+- Um ativo só é considerado identificado/resolvido se tiver `issuerId` não-nulo **ou** identifier com `scheme` de um catálogo fechado de schemes estáveis (ex.: `cnpj`, `isin`, `figi`, `lei`). Ticker/symbol sozinho **nunca** satisfaz identidade estável.
+- Timestamps DEVEM ser comparados na precisão aceita pelo parser/contrato. Se houver mais de três casas decimais fracionárias, a comparação **não pode** usar truncamento silencioso (ex.: `Date.parse`). Ou rejeita-se o excesso, ou compara-se na precisão completa.
+- Dados/snapshots históricos usados em decisões **não são sobrescritos**; correção gera nova versão/revisão/estorno.
 
-Dependências: nenhuma. Cobre RF-04, RNF-08/10.
+**TDD:** escrever primeiro testes de contrato para payloads, eventos financeiros e invariantes de tipo/unidade/moeda/data; cobrir missing/null, ticker remapeado, operação duplicada/pendente/confirmada/estornada. **Incluir obrigatoriamente os casos negativos das invariantes acima** (valuation parcial + missing-price, ativo só com ticker, timestamps sub-ms com truncamento). Observar Red antes de implementar validação executável.
 
-Status em 14/09/2026: **concluída**. `docs/DECISOES.md` registra fontes,
-versões, hashes, decisões, lacunas da fase e evidência documental.
+**Aceite:** contratos cobrem todos os campos de 7.1/7.2 ou registram lacunas; posição não pode ser alterada por payload externo não revisado; valores e eventos possuem tipo/unidade/moeda/data e origem explícitos. Testes rejeitam payload e operação ambíguos **e rejeitam explicitamente os estados proibidos listados nas invariantes**.
 
-- [x] Colocar os três arquivos deste pacote na raiz do projeto; copiar política, manual e perfis para os três caminhos canônicos de `docs/` citados no AGENTS; conferir versões/conteúdo sem reescrever as fontes.
-- [x] Registrar stack planejada, perfis P3/P1, aplicabilidade da seção 1.1, escopo e adapters em `docs/DECISOES.md`; uma nota curta basta. Inspecionar código existente se houver antes de escolher abstrações.
-- [x] Verificar lacunas da política para os nove ativos; registrar rubricas de BBSE3, critérios de ETF amplo e bloqueio SCHD.
-- [x] Confirmar que todas as adaptações de cálculo desta fase estão explícitas; não alterar a política original silenciosamente.
+**Conclusão (01/11/2026):** schemas de runtime versionados para ativos, composição, posições, eventos/lotes, caixa, observações, documentos, coletas, qualidade, transformações e snapshots foram implementados. Invariantes de identidade, valuation parcial, timestamps, precisão monetária, proveniência e imutabilidade têm testes negativos. Os 10 testes focados e a suíte completa (328 testes em 22 arquivos, execução sequencial), typecheck, lint e build passaram. Uma execução paralela com build atingiu timeout em três testes UI preexistentes; a repetição sequencial passou. A correção posterior da revisão acrescentou dois testes negativos para divergência entre valores e preço original não positivo: 12 testes focados, typecheck e lint passaram. Evidências em `docs/CONTRATOS_INT02.md`. Sem persistência, adaptação de provedores ou alteração do MVP.
 
-Pronto quando: referências existem, não há placeholders apresentados como configuração válida e decisões da fase são distinguíveis da política geral. Sem testes artificiais de Markdown.
+### Fase B — Qualidade, histórico e snapshots
 
-### T01 — Fundação do projeto
+#### INT-03 — Definir semânticas de carteira, qualidade e avaliação temporal
 
-Dependências: T00. Cobre RNF-03/04/07/10/12.
+**Depende de:** INT-02
 
-Status em 14/09/2026: **concluída**. Configuração e conteúdo estático seguiram
-TDD-04, sem Red artificial. Green observado: um smoke test Vitest e um teste
-Playwright passaram. `npm ci`, typecheck, lint e build passaram; `npm audit`
-retornou zero vulnerabilidades. Comandos, versões, alertas de manutenção e a
-limitação de `sudo` do contêiner estão documentados no README, AGENTS e em
-`docs/DEPENDENCIAS.md`. A tela mínima também foi inspecionada em Chromium a
-1280×720; conteúdo, hierarquia e aviso permanente estavam legíveis.
+**Perfil:** P3 + P5; DAD-01/04, OPS-01, DIST-03/04/08. P4 permanece N/A sem ingestão de eventos.
 
-- [x] Criar projeto TypeScript estrito com React/Vite; fixar versões suportadas e lockfile. Selecionar Vitest, Testing Library e Playwright como ferramentas planejadas, ou justificar equivalentes.
-- [x] Criar estrutura de domínio, aplicação, adapters, CLI, web, fixtures e testes.
-- [x] Configurar scripts para dev, demo, test, typecheck, lint, build e teste de navegador; atualizar AGENTS com os comandos reais verificados.
-- [x] Verificar necessidade, manutenção e compatibilidade das dependências; avaliar alertas relevantes disponíveis sem alegar certificação; não adicionar pacote para uma abstração sem caso atual.
-- [x] Confirmar execução de um teste mínimo e build; não configurar serviço de backend desnecessário. Configuração segue validação proporcional TDD-04, sem Red artificial de arquivo declarativo.
+**Objetivo:** definir as regras de significado e cálculo que impedem confundir dinheiro aportado, custos, renda, resultado e confiança dos dados.
 
-Pronto quando: scripts existem e funcionam; README informa runtime requerido. Gates: typecheck, teste inicial, lint e build reais.
+**Trabalho:**
 
-### T02 — Contratos e aritmética monetária
+1. Especificar estado independente para `missing`, `invalid`, `fresh`, `stale`, `conflict`, `provider-revised`, `source-unavailable` e `unknown-publication-time` (nomes finais conforme convenção existente).
+2. Definir regra de atualidade por classe/campo com frequência e significado da fonte; calibrar parâmetro com documentação, mercado e requisito do usuário. Não usar um prazo universal nem confundir coleta recente com dado econômico recente.
+3. Definir conflitos por observação comparável: mesma entidade, semântica, unidade, moeda e período. Não chamar diferenças legítimas de períodos/fontes de conflito.
+4. Definir autoridade/precedência por campo e condições de escolha; em conflito sem regra, marcar como não resolvido e bloquear uso sensível, sem selecionar silenciosamente valor recente/maior.
+5. Definir detecção de revisão: mesma identidade lógica do dado/período reaparece com conteúdo diferente; manter ambas as versões, registrar primeiro e último visto, hash e delta/categoria permitida.
+6. Definir resposta do motor para ausência/falha por campo/ativo: bloqueio total, parcialidade visível ou dado anterior ainda válido, conforme política; último valor não deve ser usado depois do prazo só para evitar falha.
+7. Definir detecção de drift de contrato/schema; erro de parser deve ser distinguível de campo legitimamente ausente.
+8. Escolher e documentar método de custo gerencial da posição, venda parcial, taxas, proventos reinvestidos e correções de eventos. Separar explicitamente essa medida de qualquer custo/base fiscal.
+9. Definir classes de fluxo: aporte externo e eventual retirada são fluxos de capital; compra/venda altera caixa e posição; taxa é custo; provento só é renda quando confirmado como recebido. Provento anunciado/estimado fica separado.
+10. Definir como apresentar aporte líquido, renda efetivamente recebida e resultado monetário realizado/não realizado; se houver retorno percentual, escolher método e período (por exemplo, ponderado por tempo ou por dinheiro) e definir efeito de moeda estrangeira sem misturar taxas.
+11. Definir regra de avaliação por data-base: preço de mercado, câmbio/base monetária, fuso e último preço admissível, guardando preço e câmbio originais e o momento de cada observação.
+12. Definir taxonomia de setor/grupo econômico e quando usar look-through para FIIs/ETFs; informar fonte, data de composição, pesos cobertos e categoria não classificada, sem atribuir falsa precisão.
+13. Definir tratamento de eventos corporativos que alteram quantidades/preços (ex.: desdobramento) e conciliação de ajustes de preço com quantidade do livro-razão, sem sobrescrever os eventos originais.
+14. Versionar essas políticas; decisão que não tiver definição aprovada fica fora do cálculo correspondente e é visível como lacuna, não preenchida por suposição.
 
-Dependências: T01. Cobre RF-01/02/03/11 e RNF-02/06.
+**TDD para qualidade:** testar comparabilidade, estados de fronteira temporal com relógio controlado, revisão sem overwrite, conflito irresolvido e fallback proibido. **Incluir casos negativos:** snapshot com estado de qualidade negativo + valor parcial; timestamps com diferença sub-ms sob truncamento; ativo identificado apenas por ticker mutável.
 
-Status em 15/09/2026: **concluída**. Código e 70 testes já existiam ao iniciar;
-foram caracterizados, sem alegar Red histórico. Red observado em três novas
-regressões: ausência de preço/FX de candidato e duplicidade de métricas/rubricas
-com conteúdo inválido. Gre?en após correção. Exemplo manual misto fecha orçamento
-em centavos. `npm test` passou (74 testes); `npm run typecheck`, `npm run lint`
-e `npm run build` passaram. Corrigida expansão recursiva de tipo do snapshot
-detectada no typecheck, preservando congelamento profundo. Documentação e
-limites em `docs/CONTRATOS_T02.md`. Revisão por diff contra cópia anterior às
-edições, pois a pasta não contém Git. Sem alteração visual; e2e não reexecutado.
+**TDD para carteira:** escrever exemplos antes da implementação de dinheiro/unidade, moeda, compra/venda, taxa, provento recebido versus anunciado, método de custo eleito, resultado e arredondamento. Usar relógio controlado e propriedades de conservação de caixa/quantidade.
 
-- [x] Valores inválidos, casas excessivas, notação exponencial, negativo, duplicados, pesos incoerentes, datas/unidades inválidas e limites de input cobertos; caracterização e Red de regressões conforme registro acima.
-- [x] Centavos, arredondamento FX, custos fixos/variáveis, números fora da representação e serialization round trip cobertos na caracterização existente; sem Red histórico alegado.
-- [x] Implementar tipos/schemas, parse de BRL com convenção pt-BR explícita e decimal/racional para moeda e câmbio.
-- [x] Erros estruturados por campo/código; dados ausentes não viram zero. Exercitar S22 e distinguir erro de domínio de falha operacional (COD-03/SEG-01).
+**Aceite:** política versionada especifica qualidade/frescor/conflitos e semântica de custo/fluxos/renda/retorno/exposição; valores sem origem ou regra de comparabilidade não entram silenciosamente nos cálculos; nenhuma regra fiscal ou SLA numérico foi inventado; estados proibidos das invariantes de INT-02 são rejeitados e cobertos por testes.
 
-Pronto quando: contratos descritos na seção 4 são testáveis sem I/O e os exemplos calculados manualmente fecham em centavos.
+#### INT-04 — Projetar persistência do livro-razão e histórico financeiro
 
-### T03 — Política e dados de exemplo
+**Depende de:** INT-02, INT-03
 
-Dependências: T02. Cobre RF-02/03/04/16, RNF-08.
+**Perfil:** P3 + P5; DAD-01–05, DIST-01/05/06/07/08/10
 
-- [ ] Red: perfil inexistente, âncoras fora de ordem, versão desconhecida e métricas incompatíveis.
-- [ ] Implementar configuração dos oito perfis/aplicações suportados conforme necessário, sem confundir quantidade de tickers com quantidade de perfis.
-- [ ] Criar nove posições iniciais, snapshots, rubricas com fonte fictícia e cenários de valuation fornecidos.
-- [ ] Criar fixtures S01–S24 ou builders determinísticos, com data de análise fixa e expectativas independentes.
-- [ ] Escolher pesos de simulação factíveis dentro dos limites, exposição setorial/por grupo incluindo ETFs e custos zero no cenário simples; custos não nulos em S12.
+**Objetivo:** definir a menor fonte durável de verdade para eventos aceitos da carteira, observações de mercado e snapshots reproduzíveis, em coerência com a arquitetura aprovada no INT-00.
 
-Pronto quando: fixtures validam e descrevem o cenário; nenhuma nota Q/V/C é apenas um resultado fixo que contorna os cálculos.
+**Trabalho:**
 
-### T04 — Pontuação gradual
+1. Reutilizar a tecnologia aprovada/implantada. Caso não exista, comparar alternativas pelo histórico pessoal, transação local, segurança e recuperação; não introduzir Postgres/backend apenas por expectativa futura nem descartar decisão de arquitetura vigente sem revisão.
+2. Persistir eventos aceitos de carteira em modelo append-only: correção/estorno cria evento vinculado ao original, não altera a história silenciosamente.
+3. Definir chaves para identidade de ativo, evento, observação, revisão do fornecedor, importação, execução de coleta, posição calculada e snapshot; constraints protegem duplicidade sob concorrência.
+4. Separar, conforme necessidade e licença, payload bruto permitido, observação normalizada, documento/referência, evento de carteira, caixa, resultado da coleta e snapshot; evitar duplicar payload integral sem necessidade.
+5. Persistir snapshots ou referências imutáveis suficientes para reconstruir: posição/cash ledger até um watermark, observações de preço/câmbio/fundamentos, origem/versões, política financeira e motor.
+6. Definir política de retenção/exportação/minimização compatível com fonte; snapshot histórico contém somente valores que os termos permitem preservar.
+7. Criar migrações versionadas e procedimento de backup/restauração se o armazenamento exigir. Não editar migração aplicada.
+8. Definir transação local atômica para registrar evento e seus efeitos de caixa/posição; chamadas remotas nunca ficam dentro dessa transação.
+9. Definir identificador/hash para integridade sem tratá-lo como prova de autenticidade da fonte.
 
-Dependências: T02. Cobre RF-05.
+**TDD/verificação:** testar constraints/idempotência/atomicidade no armazenamento real compatível; teste unitário isolado não demonstra garantias de banco. Ensaiar migração e recuperação se dados reais persistirem.
 
-- [ ] Red: âncoras, interpolação, extremos, saturação e direção H/L/B.
-- [ ] Implementar score 0–100 sem penalizar excelência quando direção é monotônica.
-- [ ] Testar H(−2;0;3) em 2,5 → 93,333… e L(1,5;2,5;4) em 1,8 → 88; tolerância somente numérica de score, nunca de dinheiro.
-- [ ] Preservar precisão interna; arredondar apresentação, não alterar classificação por nota exibida.
+**Aceite:** eventos e observações antigos não são sobrescritos; repetição não duplica evento; atualização da projeção pode ser reconstruída; snapshots continuam legíveis após nova coleta/regra; recuperação e direitos de retenção estão definidos. A escolha de persistência respeita a arquitetura validada.
 
-Pronto quando: testes de continuidade e monotonicidade passam e cada resultado referencia sua regra.
+### Fase C — Dados, livro-razão e projeções da carteira
 
-### T05 — Qualidade e confiança
+#### INT-05 — Implementar adaptadores e normalizadores das fontes homologadas
 
-Dependências: T03, T04. Cobre RF-04/06 e RNF-05/06.
+**Depende de:** INT-01, INT-02, INT-03, INT-04
 
-- [ ] Red: histórico versus atual, risco pelo pior período, cobertura insuficiente, zero versus ausente/inaplicável e rubricas sem evidência.
-- [ ] Implementar blocos Q por perfil e composição C conforme política.
-- [ ] Aplicar agregação de participações para holding e métricas específicas de bancos/FIIs/ETF.
-- [ ] Retornar evidências individuais e cobertura; métricas ausentes não são removidas oportunisticamente do denominador.
+**Perfil:** P5 + P3; TDD-01/03, SEG-02/03, OPS-01, DIST-02/03/04/09
 
-Pronto quando: Q/C podem ser reconstruídos a partir das evidências; dados insuficientes impedem aprovação sem bloquear valoração válida da carteira.
+**Objetivo:** obter dados reais de bolsai, FMP e fontes oficiais aprovadas sob contratos explícitos, sem acoplar o motor financeiro ao fornecedor ou ao layout dos arquivos externos.
 
-### T06 — Preço, teto e elegibilidade
+**Trabalho:**
 
-Dependências: T05. Cobre RF-07/08.
+1. Criar interfaces mínimas por capacidade e adaptadores somente para fontes/rotas aprovadas em INT-01. Implementar adaptadores bolsai e FMP apenas para os grupos de dados homologados; sem abstração universal de provedores.
+2. Manter configuração explícita de roteamento por mercado, classe de ativo e campo. O domínio recebe observações normalizadas com proveniência; não contém nomes de endpoints, autenticação ou fórmulas proprietárias.
+3. Guardar credenciais no processo confiável definido no Gate D. Bolsai documenta autenticação por header `X-API-Key`; FMP documenta a chave no parâmetro `apikey`, que deve ser redigido de URLs, logs, traces, exceções e métricas. Nunca embutir segredos no navegador, bundle, variáveis `VITE_*`, fixtures ou commits.
+4. Usar endpoints, parâmetros, campos e versões vigentes somente depois da homologação; registrar fonte, endpoint e versão da API quando disponíveis.
+5. Aplicar timeout de conexão/leitura e prazo total; limitar tamanho de resposta, lote e concorrência conforme limites documentados por provedor.
+6. Fazer retry limitado apenas em falhas transitórias seguras, com backoff/jitter quando apropriado; não repetir 4xx permanentes nem duplicar retries entre SDK, adaptador e orquestrador.
+7. Validar payloads em runtime antes de normalizar. Classificar 401/403, 404, 429, 5xx, corpo malformado, schema drift e timeout; respeitar headers de rate limit/deprecation quando fornecidos.
+8. Mapear preço, moeda, fator de ajuste, câmbio, demonstrações e métricas com testes golden por ativo/classe e documentação da semântica. Manter dados originais e ajustados distinguíveis; não combinar períodos ou unidades inconciliáveis.
+9. Aplicar fallback apenas para pares fonte/campo aprovados em INT-01 e compatíveis semanticamente. Registrar toda troca; divergência material não pode ser ocultada por escolha automática.
+10. Adaptadores de documentos oficiais guardam origem, identificador, data de publicação/recepção, hash e linhas extraídas. Extração manual revisada é opção inicial se parser automático for arriscado. Não usar LLM como fonte de verdade não verificada.
+11. Persistir payload bruto somente conforme autorização; quando cópia integral não for permitida, guardar hash, referência, metadados e os valores normalizados que a licença permitir.
 
-- [ ] Red: cenário incoerente, valor-base não positivo, margem por qualidade/confiança, cíclicas e incerteza material.
-- [ ] Implementar F/M/V e teto conforme política; P/L inválido não vira oportunidade.
-- [ ] Aplicar exceção de ETF amplo estratégico sem valuation de componentes, com linguagem “não avaliado” e verificação de execução simulada.
-- [ ] Aplicar pleno/condicional/manter/observação; precedência de bloqueios antes de ranking e histerese apenas com estado anterior fornecido.
-- [ ] Bloquear SCHD por perfil sem suporte; não impedir que sua posição seja valorada.
+**TDD:** para cada mapeamento e regra de erro, iniciar com teste que falha pelo comportamento ausente; adaptadores testam fixtures/respostas representativas, não serviço pago no CI. Contrato vivo/sandbox só com autorização e necessidade.
 
-Pronto quando: limites exatos (Q=65/75, C=80, teto e validade) têm testes e comportamento inequívoco.
+**Aceite:** respostas homologadas validam schema e semântica; adaptações mantêm proveniência e não descartam revisões, mudanças de ticker ou datas relevantes; falhas não se transformam em dado plausível; fallback segue a matriz aprovada; nenhum segredo aparece no cliente, logs ou fixtures.
 
-### T07 — Pesos e capacidade
+#### INT-06 — Cadastrar posições e registrar operações realizadas
 
-Dependências: T03. Cobre RF-09/15.
+**Depende de:** INT-02, INT-03, INT-04
 
-- [ ] Red: nove posições de uma unidade não têm necessariamente mesmo peso; converter USD e preservar posições.
-- [ ] Calcular patrimônio antes/depois de aporte, metas monetárias, déficits e capacidades.
-- [ ] Distinguir configuração impossível de posição atualmente acima do limite; não sugerir venda.
-- [ ] Testar custos afetando denominador, exposição indireta e caixa sem dupla contagem.
+**Perfil:** P3; DAD-01/02/03, SEG-01 se houver usuário autenticado
 
-Pronto quando: todos os denominadores/unidades são explícitos e estado inicial congelado não é modificado.
+**Objetivo:** manter um histórico fiel de posições de abertura e movimentações reais sem permitir que recomendação ou preço de mercado altere a carteira automaticamente.
 
-### T08 — Alocador
+**Trabalho:**
 
-Dependências: T06, T07. Cobre RF-10/11/12.
+1. Cadastrar posições iniciais por ativo com quantidade, moeda, preço/custo histórico, data-base e custos conhecidos; marcar dados desconhecidos como tais e não inventar preço/custo.
+2. Registrar eventos efetivamente executados: aportes externos, compras, vendas, custos e proventos creditados; manter data do fato, quantidade, preço, moeda, valor, origem e status.
+3. Distinguir provento anunciado/previsto de provento efetivamente recebido; somente recebimento confirmado altera caixa/renda.
+4. Aplicar evento com operação atômica: uma compra/venda atualiza evento/posição projetada e caixa juntos, ou não atualiza nada.
+5. Impedir duplicidade por identificador de evento/fonte e por idempotência no escopo definido; duas entradas iguais não podem dobrar quantidade, caixa ou renda.
+6. Corrigir erro por estorno/retificação vinculada ao evento original; preservar trilha e recalcular posições seguintes de forma explícita.
+7. Separar edição do rascunho de operação e confirmação de operação realizada; não integrar a proposta de aporte com uma ordem automática.
+8. Registrar eventual retirada externa apenas se o contrato aprovado a suportar; se não suportar, informar essa limitação para não apresentar retorno percentual incorreto.
 
-- [x] Red: exemplos manuais de divisão por classe/prioridade, unidades, custos, FX, saturação, desempate e sobras.
-- [x] Implementar algoritmo da seção 4.5 sem otimização genérica desnecessária.
-- [x] Recalcular custo marginal ao acrescentar unidade; custo fixo uma vez por ativo.
-- [x] Aplicar cinco linhas máximas, limite de condicional, teto e concentração após custos.
-- [x] Demonstrar término e validar invariantes para vários orçamentos, incluindo R$ 0,01, R$ 500, R$ 1.000 e limite máximo suportado.
+**TDD:** testar abertura de posição, aporte sem compra, compra, venda parcial, custos, provento recebido versus anunciado, repetição concorrente, estorno e falha entre gravações; usar barreiras e armazenamento real para garantias transacionais.
 
-Pronto quando: nenhuma execução ultrapassa orçamento/limites; casos sem solução retornam saldo, sem relaxar regra.
+**Aceite:** posição, quantidade, caixa e renda são derivados dos eventos confirmados; eventos repetidos não duplicam efeito; correções preservam histórico; valores iniciais ausentes não são presumidos; nenhuma proposta altera posição.
 
-### T09 — Caso de uso e proposta explicável
+#### INT-07 — Atualizar dados automaticamente e recuperar coletas
 
-Dependências: T08. Cobre RF-13/14/15, RNF-01/05/09/12.
+**Depende de:** INT-03, INT-04, INT-05
 
-- [x] Red: determinismo, identidade canônica, imutabilidade, erros globais versus resultados parciais.
-- [x] Compor avaliação/alocação/explicação com entrada explícita, sem I/O no domínio.
-- [x] Gerar reasonCodes e templates fiéis às evidências; explicar compras, exclusões e quantidade limitada.
-- [x] Snapshot completo no resultado com `simulation: true`; métricas de execução separadas de identidade. Aplicar diagnóstico da seção 4.4, sem dump automático dos dados em logs.
+**Perfil:** P5 + P3; OPS-01–03, DAD-02/03, DIST-03/04/06/07/09/10
 
-Pronto quando: mesma função atende CLI e web e não altera carteira. Nenhuma justificativa é inventada para uma saída fixa.
+**Objetivo:** verificar os dados necessários à análise e atualizar automaticamente o que estiver ausente ou vencido, com estado e recuperação explícitos.
 
-### T10 — Terminal e exportação
+**Trabalho:**
 
-Dependências: T09. Cobre RF-01/14, RNF-07/13.
+1. Ao solicitar análise/recomendação, avaliar atualidade por campo e iniciar coleta de dados requeridos ausentes/vencidos, quando a fonte e o contrato permitirem; reutilizar observação ainda válida com seu estado visível.
+2. Disponibilizar atualização iniciada pelo usuário; não exigir que o app mantenha serviço agendado enquanto fechado.
+3. Especificar frequência por categoria a partir da fonte e do uso. Atualização periódica em background é opcional e exige processo ativo e custo/benefício justificado.
+4. Modelar estados de execução: pendente, em andamento, concluída, parcial, falha conhecida e resultado desconhecido quando aplicável.
+5. Tornar persistência/idempotência da coleta segura sob repetição e concorrência com o armazenamento disponível; não confiar em lock de memória entre processos.
+6. Aplicar timeouts e tentativas limitadas em falhas transitórias seguras; respeitar rate limit; não repetir erros permanentes nem empilhar retries em diversas camadas.
+7. Permitir falha isolada por ativo/campo conforme política de lote; registrar fonte, período, duração, categoria de erro e IDs de correlação sem segredos ou payload desnecessário.
+8. Definir retomada/reprocessamento sem sobrescrever observação aceita e deixar claro quando a recomendação não atualizou algum dado.
 
-Status em 21/09/2026: **concluída**. Red focal com 13 falhas por
-`T10_NOT_IMPLEMENTED`; Green e regressão de diagnóstico de destino existente
-observados. CLI Node 22, JSON completo e publicação exclusiva por temporário
-sincronizado + hard link foram implementados sem dependência nova. S23 usa
-filesystem real e provou um vencedor concorrente, preservação do destino e
-limpeza. `npm test` passou (261 testes); integração (4 testes), typecheck, lint,
-build web e build CLI passaram. Exemplos R$ 500/R$ 1.000 e limites constam em
-`docs/TERMINAL_EXPORTACAO_T10.md`.
+**TDD:** coordenar testes concorrentes com barreira, sem `sleep`; testar retry limitado, interrupção/restart, idempotência, resultado parcial, gatilho automático da análise e rate limit.
 
-- [x] Red: entrada inválida, cenário inexistente, JSON round trip e erro ao escrever arquivo.
-- [x] Criar CLI que recebe aporte/cenário/data e imprime tabela, custos, saldo e motivos em português.
-- [x] Exportar JSON completo com publicação sem substituição concorrente conforme seção 4.4; teste de integração no filesystem para S23, não só mock. Falha intermediária preserva arquivo anterior e não publica arquivo final parcial.
-- [x] Documentar exemplos efetivamente executados de R$ 500 e R$ 1.000, códigos de saída e repetição segura da exportação sem alterar carteira.
+**Aceite:** pedir recomendação tenta atualizar dados obrigatórios ausentes/vencidos ou bloqueia claramente; resultados de coleta têm estado verificável; repetição não duplica observações; não existe promessa de refresh enquanto o app está fechado.
 
-Pronto quando: saída do terminal é simulação explícita e falha de exportação nunca muda a carteira ou é anunciada como sucesso.
+#### INT-08 — Calcular posição, custo, resultado, renda e exposições
 
-### T11 — Base visual e componentes
+**Depende de:** INT-03, INT-04, INT-05, INT-06, INT-07
 
-Dependências: T01. Cobre RF-17, RNF-14.
+**Perfil:** P3; DAD-01/04, DIST-08
 
-Status em 21/09/2026: **concluída**. Base visual React/CSS com tokens claro e
-escuro, componentes semânticos e estados vazios honestos; controles que dependem
-do motor permanecem desabilitados até T12. Red com 2 falhas por ausência dos
-controles/regiões; Green observado. Inspeção real em Chromium a 360/768/1280 px
-e tema escuro corrigiu a centralização da tabela mobile. `npm test` passou
-(263 testes), integração (6 testes), typecheck, lint, build e e2e passaram.
-Detalhes em `docs/BASE_VISUAL_T11.md`.
+**Objetivo:** construir projeções puras e reproduzíveis da carteira sobre eventos aceitos e observações de mercado válidas.
 
-- [x] Definir tokens CSS de superfícies neutras, texto, bordas, verde de ação e âmbar de atenção; tema claro/escuro legível.
-- [x] Criar campo monetário, botão, seletor, status, tabela e painel de detalhe, com semântica/foco/labels.
-- [x] Reproduzir direção visual da prévia: cabeçalho, aviso, formulário, resumo, proposta, evidências, exclusões e pesos.
-- [x] Inspecionar 360/768/1280 px; não depender de ícones, cores ou tooltip para informação essencial.
+**Trabalho:**
 
-Pronto quando: base visual consistente sem infraestrutura de design system genérico. TDD para comportamentos; inspeção para CSS puramente visual.
+1. Calcular quantidade/saldo por ativo e caixa por moeda em uma data-base explícita, a partir de posições iniciais e eventos confirmados.
+2. Calcular valor de mercado por ativo em moeda local e na moeda-base usando preço e câmbio identificados; manter separada variação do preço local e efeito de conversão quando os dados permitirem.
+3. Calcular custo gerencial conforme política aprovada, despesas, lucro/prejuízo realizado e não realizado, capital externo aportado e renda recebida, evitando contar compra como novo aporte ou provento reinvestido duas vezes.
+4. Calcular exposição por ativo/classe, moeda, setor e grupo econômico; explicitar origem da classificação, cobertura e parte não classificada.
+5. Para fundos/ETFs, calcular look-through somente com composição e pesos de origem/data aceitáveis; separar exposição direta do instrumento de sua composição.
+6. Tratar eventos corporativos/ajustes sem combinar preço ajustado com quantidade antiga de forma incompatível.
+7. Não exibir porcentagem de retorno sem método e fluxo de caixa definidos; não rotular custo gerencial/retorno como apuração fiscal.
+8. Manter projeções determinísticas: nenhuma fórmula lê API, banco, relógio global ou estado mutável.
 
-### T12 — Fluxo no navegador
+**TDD:** exemplos pequenos de carteira multi-moeda, compra/venda parcial, custos, proventos, FX, classificação faltante e look-through parcial; propriedades de conservação de caixa/quantidade e soma de exposição com parcela não classificada.
 
-Dependências: T09, T11. Cobre RF-01/17/18, RNF-15.
+**Aceite:** os totais distinguem principal, resultado e renda; valores são reproduzíveis na data-base; custo/moeda/retorno seguem política versionada; exposição incompleta é sinalizada e não fabricada.
 
-Status em 21/09/2026: **concluída**. Fluxo conectado ao motor compartilhado,
-sete estados, revisão de entrada e diagnóstico seguro. Red/Green observados;
-270 testes, typecheck, lint, build e quatro e2e Chromium passaram.
-Inspeção a 360/768/1280 px. Evidências em docs/FLUXO_WEB_T12.md.
-Nesta etapa, o download permanecia indisponível, inclusive para resultados atuais; foi habilitado na T13.
+### Fase D — Motor, interface e fechamento
 
-- [x] Red: formulário inválido, seleção de cenário, atalhos, loading, resultado vazio e erro global.
-- [x] Ligar formulário ao mesmo caso de uso do CLI; não implementar fórmula em componente.
-- [x] Alteração de aporte/cenário marca proposta anterior desatualizada e desabilita exportação até nova análise.
-- [x] Proteger identidade da entrada se execução for assíncrona; testar duas conclusões fora de ordem por promessas controladas, sem sleeps.
-- [x] Aviso permanente de dados fictícios; carteira somente leitura.
+#### INT-09 — Integrar carteira e dados confiáveis ao motor de decisão
 
-Pronto quando: R$ 500/R$ 1.000 executam motor real sobre fixtures, e nenhuma resposta antiga substitui estado mais recente.
+**Depende de:** INT-03, INT-04, INT-07, INT-08
 
-### T13 — Evidências, exclusões e pesos
+**Perfil:** P3; DAD-04, DIST-08, TDD-01
 
-Dependências: T12. Cobre RF-13/19/20.
+**Objetivo:** manter decisão determinística, explicável e reproduzível usando uma visão consistente da carteira e os dados de mercado/fontes disponíveis na mesma data-base.
 
-Status em 22/09/2026: **concluída**. Red/Green observados; 275 testes,
-typecheck, lint, build e cinco e2e Chromium passaram. Evidências em
-`docs/DETALHES_WEB_T13.md`.
+**Trabalho:**
 
-- [x] Red: selecionar ativo, detalhar regra, exibir ausência e motivos de exclusão, baixar a proposta exibida; texto HTML/script fictício permanece texto (S21).
-- [x] Tabela de compras com ticker, preço simulado/limite, quantidade, custos e total; seleção atual acessível.
-- [x] Detalhe com métricas, faixas, nota, confiança, teto e motivos; mostrar tanto aprovação parcial quanto bloqueios.
-- [x] Mostrar pesos antes/depois/alvo com valores consistentes; esclarecer custos/reserva e não inventar evolução histórica.
-- [x] Download JSON via browser; geração não significa confirmação de salvamento em disco.
+1. Gerar a recomendação para `asOf` explícito a partir de projeção da carteira e observações qualificadas; manter rede fora do domínio determinístico.
+2. Aplicar perfis financeiros por classe/tipo; banco, seguradora, indústria, FII de tijolo/papel e ETF não compartilham métricas inadequadas.
+3. Incluir posição, caixa, aporte disponível e proventos somente quando efetivamente disponíveis; compra proposta não conta como operação real.
+4. Separar valor reportado, oficial, derivado e ajustado, com proveniência e unidade.
+5. Bloquear ou sinalizar recomendação quando dado obrigatório estiver stale/missing/invalid/conflict não resolvido; não cair silenciosamente em fixtures.
+6. Persistir snapshot imutável contendo watermark/eventos da carteira e caixa, projeções usadas, IDs/versões de preço/câmbio/fundamentos, origem/estado, `asOf`, versão da política/motor e parâmetros.
+7. Permitir replay sem API atual; operação retificada ou fornecedor corrigido produz nova versão/observação sem alterar recomendação já registrada.
+8. Garantir entradas e versões iguais produzem resultado igual; proposta não cria compra, venda, provento ou alteração de posição.
 
-Pronto quando: o usuário entende por que cada ativo recebeu ou não dinheiro e o efeito simulado; a tela não expõe stack, nomes internos de classes ou detalhes irrelevantes ao produto.
+**TDD:** testes de decisão com posição, eventos, FX e dados controlados, cobrindo missing/stale/conflict/revision, aporte, provento, concentração, reprodução e correção posterior da fonte; separar motor puro do armazenamento do snapshot.
 
-### T14 — Aceitação integrada
+**Aceite:** recomendação/justificativa usam e identificam a mesma projeção e as mesmas observações; snapshot reproduz resultado após mudanças futuras; modo real não usa fixtures invisivelmente e não grava operação/posição.
 
-Dependências: T10, T13. Cobre todos os cenários, RNF-11/14.
+#### INT-10 — Exibir carteira, operações, resultados e qualidade dos dados
 
-Status em 22/09/2026: **concluída**. Evidências e limites em
-`docs/VALIDACAO.md`.
+**Depende de:** INT-06, INT-08, INT-09
 
-- [x] Executar S01–S24; oráculos e invariantes independentes do código de produção.
-- [x] Comparar decisões CLI/browser por centavos, quantidades, ids e reasonCodes, desconsiderando apenas metadados operacionais.
-- [x] Testar teclado, validação, detalhes, download e resultado desatualizado no navegador.
-- [x] Inspecionar tema/responsividade; verificar ausência de chamada a API externa durante simulação após recursos locais carregados.
-- [x] Medir duração do núcleo em máquina descrita, após aquecimento; relatar maior tempo observado, não prometer SLA universal.
-- [x] Executar typecheck, lint, testes e build; verificar S21–S24, ausência de segredos e erros sem sucesso falso. Corrigir falhas reais, sem ampliar infraestrutura para satisfazer teste artificial. Alertas relevantes de dependências disponíveis foram avaliados.
+**Perfil:** P1 + P3; SEG-01/03, DIST-02, requisitos de acessibilidade existentes
 
-Pronto quando: evidências locais e limitações são registradas em `docs/VALIDACAO.md`; não afirmar API/mercado validados.
+**Objetivo:** permitir conferir posições e operações realizadas, entender as métricas de carteira e avaliar a qualidade dos dados que sustentaram a recomendação.
 
-### T15 — Entrega reproduzível
+**Trabalho:**
 
-Dependências: T14. Cobre RNF-07/10/12.
+1. Exibir ativos/posições, quantidade, moeda, preço/custo gerencial e data-base da avaliação; distinguir dados informados de valores derivados.
+2. Permitir cadastrar posição inicial e registrar operação já executada; mostrar rascunho/pendente separado de confirmado, com correção por fluxo auditável.
+3. Mostrar capital aportado, renda recebida, resultado e custos em métricas separadas; não contar provento estimado como dinheiro recebido.
+4. Mostrar valor/exposição por classe, moeda, setor e grupo econômico; apresentar cobertura direta/look-through e parcela sem classificação.
+5. Mostrar hora de publicação (se conhecida), período econômico, coleta, origem e status por dado; expor stale, missing, conflito, revisão do fornecedor e falha.
+6. Exibir resumo do refresh automático/manual e motivo de bloqueio/parcialidade; distinguir fixture de dado real na tela/exportação.
+7. Manter aviso de que recomendação não envia ordens; renderizar documentos/textos como conteúdo não confiável e mensagens sem stack trace/segredo.
+8. Seguir acessibilidade por teclado, foco, labels e nomes de status não dependentes apenas de cor.
 
-- [x] README: instalar, testar, executar CLI, abrir navegador e reproduzir cenários com comandos verificados; explicar recuperação por recálculo determinístico e reexportação, temporários que podem ser limpos e ausência de dados reais persistidos.
-- [x] Documentar data fixa, carteira e valores fictícios, critérios fornecidos, convenções de custo/câmbio e bloqueio SCHD.
-- [x] Documentar como adicionar fixture sem alterar algoritmo e pontos de extensão para API/registro futuro.
-- [x] Instalar pelo lockfile e validar uma cópia isolada sem dependências/bundles anteriores; revisar arquivos de saída e segredos. A pasta `.git` fornecida não tem commits nem arquivos rastreados, então não foi possível testar clone Git publicado.
-- [x] Atualizar status/checklists e revisar coerência entre TASK, grafo e AGENTS.
+**TDD/verificação:** testes observáveis de fluxo e estado vazio/erro/resultado antigo, operação pendente/confirmada e discrepância de fonte; teste UI acessível; inspeção visual dos componentes alterados.
 
-Status em 25/09/2026: **concluída**. A cópia isolada passou em `npm ci`,
-`npm test` (313 testes em 20 arquivos, execução sequencial), typecheck, lint,
-build web e build CLI. Os comandos de CLI para S01/R$ 500 e S02/R$ 1.000
-retornaram código zero e os centavos documentados. Uma tentativa de suíte
-concorrente com gates estáticos teve dois timeouts de 5 s; a repetição isolada
-passou. `.nvmrc` fixa Node 22.11.0. Registro e limitação do checkout em
-`docs/ENTREGA_T15.md`.
+**Aceite:** é possível conferir o que foi registrado e por que os cálculos resultam nos valores exibidos; operação proposta/importada não aparece como realizada antes da confirmação; origem e qualidade são acessíveis e UI não expõe credenciais.
 
-Pronto quando: terceiro consegue reproduzir o resultado e distingue claramente planejamento, teste, simulação e capacidades ainda inexistentes.
+#### INT-11 — Importar operações de fonte externa (condicional)
 
-### Registro pós-entrega — interface V3 Premium
+**Depende de:** INT-01, INT-02, INT-03, INT-04, INT-06
 
-Status em 27/09/2026: **concluído** para a referência V3 disponível em
-`docs/buyhold-wireframe-v3-premium.html`. O caminho
-`docs/buyhold-v3-premium-reference.html` citado no pedido não existia no
-workspace; os guias V3 apontam para o wireframe disponível. A refatoração
-criou um presenter sobre o resultado validado, navegação responsiva, cartão de
-decisão, páginas de carteira/estratégia, abas e detalhe modal. Domínio, caso de
-uso, contratos e serialização financeira não foram alterados. O Red inicial
-teve duas falhas comportamentais por navegação e estados V3 ausentes; o Green
-passou após a implementação. `npm test` passou com 317 testes em 21 arquivos;
-typecheck, lint, build e 10 testes Chromium passaram. Os testes visuais com
-snapshots em 1440×1100 e 390×844 passaram. Evidência e decisão ARQ-01 em
-`docs/REFATORACAO_V3.md`.
+**Perfil:** P5 + P3; P2 somente se o produto passar a expor API própria autenticada ou gestão multiusuário; SEG-01–03, DAD-03, OPS-01, DIST-02/03/04/05/10
 
-Em seguida, o frontend foi reorganizado por responsabilidade: `App.tsx` segue
-como controlador; `app/AppShell.tsx` mantém a moldura; páginas e componentes
-foram separados em `features/contribution`, `features/portfolio` e
-`features/strategy`, cada componente com CSS próprio. Navegação, títulos, painéis
-e estados vazios compartilhados ficam em `shared/`; tokens e estilos globais
-ficam em `style/`. A aba selecionada permanece no controlador e somente a rota
-ativa é montada, sem IDs duplicados. `npm test` (318), typecheck, lint, build e 10 testes
-Chromium passaram depois da extração. Detalhes e ARQ-02 em
-`docs/REFATORACAO_V3.md`.
+**Condição de entrada:** INT-01 identificou uma fonte autorizada, confiável, tecnicamente disponível e com identidade estável para as operações realizadas. Sem isso, registrar a tarefa como “não habilitada neste marco”; o fluxo manual de INT-06 continua válido e esta ausência não bloqueia a integração principal.
 
-## 7. Gates e evidências
+**Objetivo:** reduzir digitação manual importando operações realizadas sem executar ordens, confirmar operações automaticamente ou duplicar eventos já registrados.
 
-Conforme TDD-02, antes de alterar código existente sem cobertura criar caracterização do que precisa ser preservado, que pode começar passando. Bug/comportamento novo exige Red próprio. Em refatoração pura usar testes existentes e completar lacunas relevantes, sem falha artificial.
+**Trabalho quando habilitada:**
 
-TDD-04: documentação, visual sem lógica e artefatos gerados usam inspeção/build; configuração/declarativos usam validação proporcional. Experimento descartável pode explorar incerteza sem TDD, mas não entra no produto sem o fluxo de implementação e verificação. Ambiente bloqueado exige testes escritos e limitação explícita: não declarar Red/Green observados. TDD-05: não exigir relatório por teste, cobertura 100% ou bateria irrelevante após resolver os riscos.
+1. Confirmar contrato, autenticação, escopo mínimo, termos, formato, identidade da conta/ativo, timezone, moedas, custos, timestamps e política de atualização da fonte.
+2. Buscar ou receber somente operações finalizadas; estados pendentes/cancelados e proventos anunciados não alteram carteira/caixa.
+3. Importar registros para área pendente de revisão com `sourceId`, identificador externo e hash/referência apropriados; não inserir diretamente como evento confirmado.
+4. Deduplicar por fonte/conta/ID estável e lidar com mesmos valores com IDs diferentes por conciliação, sem heurística destrutiva.
+5. Mostrar operações que coincidem, estão ausentes ou conflitam com lançamentos manuais; usuário concilia e confirma antes da postagem atômica no livro-razão.
+6. Repetir importação deve retornar o mesmo conjunto lógico sem duplicar quantidade, caixa, custo ou renda; armazenar checkpoint/cursor somente se a API fornecer semântica adequada.
+7. Aplicar timeout/retry limitado e proteger segredo conforme INT-05/07; não acoplar ao cálculo do motor.
 
-Formato do registro por tarefa: status (pendente/em andamento/concluída/bloqueada), comportamento testado, comando real, Red observado quando aplicável, Green observado, arquivos alterados, limitações. Não há comandos executados neste documento: scripts serão criados em T01.
+**TDD:** testar importação repetida, falha depois de buscar/antes de confirmar, operação parcial, ID repetido, conflito com entrada manual, cancelamento/revisão do usuário, moeda/custo e lote com registros inválidos.
 
-Definition of Done (manual §11): dependências concluídas; requisitos vinculados atendidos; testes relevantes passam; typecheck/lint/build afetados passam; inspeção visual quando aplicável; diff revisado; explicações concordam com decisões; nenhuma promessa fora do escopo; exceções/N/A corretamente identificados; dependências/configuração/recuperação tratadas quando afetadas. Falhas preexistentes ou cenário não executado ficam explícitos. Requisitos de segurança/integridade ativados não são adiados por ser MVP.
+**Aceite se habilitada:** fonte/limites/termos comprovados; registros passam por conciliação e confirmação; mesma operação não duplica efeito após retries; divergências permanecem visíveis; nenhum endpoint de compra/venda é chamado.
 
-Meta final: preencher aporte e cenário, receber proposta confiável **sobre dados fictícios**, examinar o raciocínio e baixar seu snapshot. Não existe autorização para operar investimentos reais ou registrar recomendações como compras.
+**Aceite se não habilitada:** registrar motivo baseado em evidência e manter operação externa desligada, sem bloquear os demais critérios do plano.
+
+#### INT-12 — Executar verificação transversal de segurança, integração e falhas
+
+**Depende de:** INT-05, INT-06, INT-07, INT-08, INT-09, INT-10
+
+**Perfil:** P3 + P5; P1 se interface tocada; P4 somente se houver fluxo real de eventos; SEG-04, OPS-01–03, DIST-10
+
+**Objetivo:** verificar fronteiras completas ativadas pela integração e reparar regressões antes da aceitação.
+
+**Trabalho/verificações:**
+
+1. Executar testes unitários do contrato/motor e de UI aplicáveis, integração com persistência compatível, teste de fixture/golden e fluxo ponta a ponta mínimo.
+2. Simular provedor: 401/403, 404/sem cobertura, 429, 5xx, timeout antes/depois de resposta, JSON malformado, `null`, campo removido/tipo mudado, ticker remapeado e revisão retroativa.
+3. Testar conflito entre fontes para período comparável, divergência que não é conflito, documento mais recente publicado mas coletado depois, e timezone/data de fechamento.
+4. Testar posição inicial, aporte, compra, venda parcial, taxas, proventos reais versus estimados, estorno e corrida de operações repetidas; validar caixa/posição atômicos.
+5. Testar valuation cambial por data-base, método de custo escolhido, capital aportado versus resultado/renda, exposição look-through incompleta e ativos não classificados.
+6. Testar corrida de duas coletas, reinício durante tarefa, retry, persistência parcial, repetição da mesma fonte e mudança do esquema local.
+7. Verificar API key fora do bundle/client, logs, fixtures e exportações; saída de erro não revela detalhes sensíveis.
+8. Verificar migration/backup/restauração apenas se mecanismo de persistência o exigir e com dados de teste; sem ação em credenciais ou contas de produção.
+9. Executar comandos reais identificados no INT-00 (testes, tipagem/lint/build e demais gates); não declarar verificações não executadas.
+10. Revisar diffs, dependências novas, limites de timeout/retry/retention e decisões arquiteturais introduzidas.
+
+**Aceite:** todos os testes/gates aplicáveis passam ou limitações estão discriminadas; falhas externas nunca fabricam sucesso; segurança, idempotência, snapshots e conservação de histórico foram exercitados com garantia no componente apropriado.
+
+#### INT-13 — Documentar operação, fontes, limitações e aceite do produto
+
+**Depende de:** INT-12
+
+**Perfil:** P3 + P5; ENG-02, OPS-02/03, DIST-10
+
+**Objetivo:** tornar instalação, operação e interpretação da integração repetíveis sem expor segredo.
+
+**Trabalho:**
+
+1. Documentar configuração local de chave por exemplo de variável/documento, nunca o valor real; processo de configuração e rotação conforme recurso real.
+2. Documentar atualização automática ao solicitar análise, atualização manual, estados de sucesso/parcial/falha, reprocessamento seguro, leitura de logs e tratamento de conflito/revisão.
+3. Registrar fontes por campo e limitações conhecidas (cobertura, atualização, direitos de armazenamento, precisão, histórico, moedas), data de verificação e links oficiais.
+4. Documentar backup/restauração se dados persistentes, exportação/retenção e procedimento para reparar schema drift sem apagar histórico.
+5. Documentar lançamento manual, correção/estorno e reconciliação de eventos; declarar a metodologia de custo e retorno como gerencial, não fiscal.
+6. Documentar a importação externa somente se habilitada; incluir fonte, limites, conciliação e comportamento para duplicidade.
+7. Atualizar `AGENTS.md`, escopo, System Design e índices de docs somente onde comportamento, comandos ou decisões realmente mudaram; não alterar regra financeira sem nova versão da política.
+8. Manter modo fixtures isolado, sem confundir dados simulados com reais.
+
+**Verificação:** seguir documentação em ambiente limpo permitido; confirmar cada comando e configuração; revisão do diff/documentação.
+
+**Aceite:** outra pessoa consegue reproduzir setup/testes e identificar qualidade/origem dos dados; estado observado corresponde à operação documentada; todas as limitações e pendências materiais permanecem claras.
+
+## 4. Matriz de dependências (espelho do grafo)
+
+| ID | Predecessores |
+|---|---|
+| INT-00 | — |
+| INT-01 | INT-00 |
+| INT-02 | INT-00, INT-01 |
+| INT-03 | INT-02 |
+| INT-04 | INT-02, INT-03 |
+| INT-05 | INT-01, INT-02, INT-03, INT-04 |
+| INT-06 | INT-02, INT-03, INT-04 |
+| INT-07 | INT-03, INT-04, INT-05 |
+| INT-08 | INT-03, INT-04, INT-05, INT-06, INT-07 |
+| INT-09 | INT-03, INT-04, INT-07, INT-08 |
+| INT-10 | INT-06, INT-08, INT-09 |
+| INT-11 | INT-01, INT-02, INT-03, INT-04, INT-06 (condicional; não bloqueia núcleo) |
+| INT-12 | INT-05, INT-06, INT-07, INT-08, INT-09, INT-10 |
+| INT-13 | INT-12 |
+
+## 5. Marcos de decisão e bloqueios
+
+- **Gate A — viabilidade de fonte (após INT-01):** cobertura/termos/custo/chaves compatíveis? Se não, especificar fonte alternativa ou reduzir campos; não avançar alegando cobertura.
+- **Gate B — dados semânticos (após INT-02/03):** unidade, período, publicação e regra de validade conhecidos? Se não, marcar campo indisponível para decisão ou bloquear integração desse campo.
+- **Gate C — retenção (antes de persistir payload bruto/documento em INT-04/05):** direito e necessidade de guardar payload existem? Se não, persistir somente metadados/valores/snapshots autorizados; o desenho de persistência pode prosseguir sem cópia bruta.
+- **Gate D — arquitetura e credenciais (antes de INT-05):** processo seguro fora do navegador e integração com aplicação atual definidos? Se não, registrar escolha mínima e não enviar chave ao browser.
+- **Gate E — uso decisório (antes de INT-09):** política define comportamento para qualidade/conflito/stale e a carteira tem eventos/posição conciliados? Se não, não aprovar recomendação real para campos afetados.
+- **Gate F — importação (antes de INT-11):** só avançar se fonte de operações for confiável, autorizada, estável e conciliável; sem fonte, registrar “não habilitada” e prosseguir com entrada manual.
+- **Gate G — aceitação (INT-13):** gates de teste/segurança/recuperação e documentação compatíveis com evidência observada; INT-11 pode permanecer desligada somente com limitação registrada.
+
+## 6. Referências normativas e técnicas
+
+- `GRAFO_DEPENDENCIAS.md` — DAG desta iniciativa.
+- `ESCOPO_PRODUTO_MVP.md`, `AGENTS.md`, `GRAFO_DEPENDENCIAS.md`, `TASK.md` — fronteiras e implementação fictícia que continua preservada.
+- `docs/DECISAO_FONTES_DADOS.md` — roteamento provisório e gates de homologação de bolsai, FMP e fontes oficiais.
+- `Politica_Decisao_Motor_Investimentos_v1.md` — fonte de requisitos financeiros; não alterar por conveniência do provedor.
+- `MANUAL_PADRAO_ENGENHARIA(1).md` e `PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS(2).md` — regras de engenharia obrigatórias.
+- `docs/CONTRATOS_INT02.md` — schemas, semântica e invariantes runtime da INT-02.
+- bolsai: [documentação oficial](https://api.usebolsai.com/docs) e [OpenAPI](https://api.usebolsai.com/openapi.json); rotas, planos e respostas autenticadas estão em `docs/VIABILIDADE_FONTES_INT01.md`; nenhuma fonte foi homologada.
+- FMP: [documentação oficial](https://site.financialmodelingprep.com/developer/docs), [quickstart/autenticação](https://site.financialmodelingprep.com/developer/docs/quickstart), [planos](https://site.financialmodelingprep.com/developer/docs/pricing) e [termos](https://site.financialmodelingprep.com/terms-of-service); API não chamada sem autorização escrita para integração.
+- Fontes complementares consultadas em INT-01: [CVM — informe de FII estruturado](https://dados.cvm.gov.br/dataset/fii-doc-inf_trimestral), [BCB — PTAX](https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios), [B3 — cotações históricas](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/) e [Schwab — SCHD](https://www.schwabassetmanagement.com/products/schd). Consulta documental não substitui cobertura autenticada ou licença aplicável.
