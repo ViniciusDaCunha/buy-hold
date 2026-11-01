@@ -1,12 +1,10 @@
 # Regras de implementação — simulador de aportes
 
-Versão 1.4 · 31/10/2026 · Derivado do Manual padrão de engenharia v1.1 e dos Perfis de projetos — sistemas distribuídos v1.1, ambos fornecidos e lidos.
-
-Alterações 1.4: reforço de invariantes prescritivas (estados parciais ilegais, identidade estável vs ticker, precisão de timestamps, imutabilidade de histórico) e obrigatoriedade de casos negativos no TDD.
+Versão 1.2 · 25/09/2026 · Derivado do Manual padrão de engenharia v1.0 e dos Perfis de projetos — sistemas distribuídos v1.0, ambos fornecidos e lidos.
 
 ## Contexto e estado real
 
-Escopo concluído T00–T15: motor determinístico com dados fictícios, CLI e tela React para testar aportes variáveis. Essa entrega é o MVP preservado; proposta nenhuma executa ou registra compras. A iniciativa posterior de gestão da carteira e integração de dados está definida em `TASK.md` e `GRAFO_DEPENDENCIAS.md`; nela P3 é principal, P5 se aplica a integrações, P1 somente quando a interface mudar, P4 permanece N/A para pull REST e P2 depende de surgir API/contas multiusuário. Integração e persistência só avançam pelos gates do plano.
+Objetivo: motor determinístico com dados fictícios, CLI e tela React para testar aportes variáveis. Perfil principal **P3 — Motor de cálculos e decisões**; complemento **P1 — Interface**. P2/P4/P5/P6/P7 não estão ativos nesta fase. Nenhuma proposta executa ou registra compras.
 
 T01 concluída em 14/09/2026: Node 22.11.0 e npm 10.9.0, TypeScript estrito,
 React/Vite, Vitest, Testing Library, ESLint e Playwright, com versões exatas no
@@ -104,21 +102,9 @@ Estrutura atual: `frontend/` contém a interface; `backend/src/` contém domíni
 - SCHD participa da valoração/exposição, mas compra fica bloqueada enquanto perfil de dividendos estiver sem suporte.
 - Explicações derivam das evidências e coincidem com quantidades/notas; dados fictícios nunca são apresentados como análise real.
 
-### Invariantes reforçadas (produção / contratos canônicos)
-
-Formulação prescritiva e negativa. Estas regras aplicam-se a qualquer contrato de runtime, snapshot, observação de mercado e identidade de ativo (inclusive na fase INT):
-
-- Um snapshot ou observação marcado como `missing-price`, `invalid`, `unavailable` ou equivalente **não pode** conter valor monetário parcialmente preenchido (`baseMarketValue`, `localMarketValue`, `priceObservationId` etc.). Combinações parciais inconsistentes DEVEM ser rejeitadas em runtime.
-- Um ativo só pode ser considerado identificado/resolvido se tiver `issuerId` não-nulo **ou** pelo menos um identifier com `scheme` pertencente a um catálogo fechado de schemes estáveis (ex.: `cnpj`, `isin`, `figi`, `lei`). Ticker/symbol sozinho **nunca** satisfaz o requisito de identidade estável.
-- Timestamps DEVEM ser comparados na precisão que o parser/contrato aceita. Se o contrato admite mais de três casas decimais fracionárias, a comparação **não pode** depender de truncamento silencioso (ex.: `Date.parse`). Ou rejeita-se o excesso de precisão, ou compara-se na precisão completa. Validade temporal deve permanecer distinta.
-- Dados e snapshots usados em decisões históricas **não são sobrescritos**. Correção gera nova versão, revisão ou evento de estorno vinculado ao original.
-- Falha nunca se transforma em valor plausível ou sucesso falso. Estados parciais e resultado desconhecido devem ser explícitos.
-
 ## TDD obrigatório e exceções
 
 Aplicar TDD-01–05: **Red → Green → Refactor** a cálculo, validação, regras, exportação e lógica de interface. Red precisa falhar pela ausência/incorreção do comportamento, não por sintaxe, import ou ambiente quebrado. Implementar a regra mínima correta, não apenas o exemplo. Refatorar se trouxer clareza; não criar abstração por obrigação.
-
-**Casos negativos e estados proibidos são parte obrigatória do Red** quando o domínio os define (valuation parcial inconsistente, identidade só com ticker, timestamps com precisão excessiva, falha parcial, retry duplicado etc.). Um conjunto de testes que cobre apenas o caminho feliz não satisfaz TDD para contratos canônicos e invariantes de rejeição.
 
 Bugs exigem regressão antes da correção. Código existente sem cobertura exige caracterização do comportamento preservado (pode começar passando); novo comportamento/bug ainda exige seu próprio Red. Refatoração pura usa cobertura existente e lacunas relevantes sem Red artificial.
 
@@ -148,7 +134,7 @@ Aplicar SEG-01–04 nas fronteiras existentes: validar payloads, limites de entr
 
 Erros operacionais devem informar código, etapa, cenário e versões; decisionId quando já existir. Erro esperado de domínio é distinto de falha operacional. CLI retorna erro global com status não zero; cálculo válido sem compras é sucesso. Não esconder falha com números plausíveis ou sucesso falso. Sem plataforma de telemetria nesta fase.
 
-Servidor de desenvolvimento do MVP em loopback por padrão, recursos locais e simulação sem chamadas externas após instalação. Na iniciativa INT, qualquer acesso a provedor deve ocorrer por processo confiável decidido no Gate D; credenciais nunca vão para React/bundle. Não implementar login, CSRF ou rate limit remoto sem fronteira que os exija. Se o produto passar a ter API/contas/exposição pública, reavaliar autorização, limites, segredos e riscos antes de declarar essa capacidade pronta. CORS nunca é autorização.
+Servidor de desenvolvimento em loopback por padrão, recursos locais e simulação sem chamadas externas após instalação. Não implementar login, CSRF ou rate limit remoto sem fronteira que os exija. Se o produto passar a ter API/contas/exposição pública, reavaliar autorização, limites, segredos e riscos antes de declarar essa capacidade pronta. CORS nunca é autorização.
 
 Interface com HTML semântico, teclado, foco visível, labels e feedback acessível. Cor não é informação exclusiva. Aviso permanente de simulação; resultado antigo explicitamente desatualizado; exportação vinculada à proposta atual. Pesos futuros dizem “após compras simuladas”. Testar conteúdo malicioso como texto e limites/erros negativos pertinentes. Usar OWASP como fonte de requisitos aplicáveis, sem declarar certificação.
 
@@ -158,4 +144,4 @@ Antes de concluir: critérios aceitos, TDD ou exceção delimitada, testes relev
 
 N/A não exige aprovação; exceções previstas podem ser usadas dentro das condições do manual. Escolhas reversíveis autorizadas prosseguem sem confirmação repetida. Exceção nova que contrarie obrigação deve identificar regra, motivo, risco, mitigação e remoção; não se autoaprovar nem alterar instruções para contornar. Falha conhecida de acesso indevido, segredo ou corrupção impede declarar a parte afetada pronta.
 
-No MVP T00–T15 não havia API real, banco, autenticação, filas, Redis, WebSocket, Kubernetes, agentes autônomos ou linguagem genérica de regras. Isso descreve o estado entregue, não dispensa a avaliação da nova iniciativa. O plano INT não presume esses componentes: persistência e recuperação são decididas em INT-04; serviço externo, fila ou scheduler só entram após necessidade e gates demonstrados. DAD-05 é N/A para os dados fictícios atuais e deve ser reavaliado se a persistência de dados reais exigir migração/backup. O MVP reduz funcionalidades, não garantias necessárias ao comportamento implementado.
+Sem API real, banco, autenticação, filas, Redis, WebSocket, Kubernetes, agentes autônomos ou linguagem genérica de regras nesta fase. DAD-05 (migração/backup de dados reais) e operação remota são N/A; seus gatilhos futuros estão no grafo. O MVP reduz funcionalidades, não garantias necessárias ao comportamento implementado.
