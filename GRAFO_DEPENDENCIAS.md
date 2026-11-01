@@ -1,10 +1,18 @@
 # Grafo de dependências — gestão da carteira e integração de dados
 
-Versão 1.2 · 31/10/2026  
-Status: plano proposto; todas as entregas pendentes  
+Versão 1.6 · 01/11/2026
+
+Status: INT-00, INT-01 e INT-02 concluídas; INT-03–INT-13 pendentes
+
 Escopo: evolução do motor de aportes nos requisitos 7.1/7.2, sem envio de ordens
 
-Alterações 1.2: reforço de regras de engenharia com invariantes prescritivas (estados parciais ilegais, identidade estável, precisão de timestamps) e obrigatoriedade de casos negativos no TDD.
+Alterações 1.6: INT-01 concluída como avaliação no-go para recomendação real; cobertura autenticada e bloqueios de Bolsai registrados; FMP sem chamada por falta de autorização escrita; INT-02 concluída com contratos runtime e gates verificados.
+
+Alterações 1.5: evidências INT-01 registradas em `docs/VIABILIDADE_FONTES_INT01.md`; PTAX pública testada; rotas de mercado permanecem bloqueadas sem prova autenticada e permissão de uso/retenção.
+
+Alterações 1.4: inventário INT-00 registrado em `docs/ALINHAMENTO_INT00.md`; stack, interfaces e ausência de persistência real confirmadas no repositório.
+
+Alterações 1.3: roteamento candidato definido para bolsai (Brasil) e FMP (EUA), com homologação por ticker/campo antes da implementação; referência à decisão de fontes adicionada.
 
 ## 1. Objetivo e limites
 
@@ -14,7 +22,7 @@ Este plano é uma fase posterior ao simulador com fixtures. O sistema continua p
 
 ### Dentro do escopo planejado
 
-- Brapi como primeiro adaptador de dados de mercado, condicionado a spike de cobertura, plano, termos, limites e contratos vigentes.
+- bolsai como candidata para ações/FIIs brasileiros e FMP para SCHD, condicionados à homologação de cobertura, semântica, plano, termos, limites e proteção das credenciais.
 - Dados oficiais/documentais como fonte complementar e, quando aplicável, autoridade para conteúdo regulatório/financeiro publicado pela companhia.
 - Cadastro de posições iniciais e registro de aportes, compras, vendas, proventos efetivamente recebidos e custos de operação.
 - Livro-razão de eventos como fonte reconstruível das posições; valor de mercado, custo, exposições e resultados são projeções calculadas, não campos editáveis independentes.
@@ -37,7 +45,7 @@ Este plano é uma fase posterior ao simulador com fixtures. O sistema continua p
 
 ## 2. Contexto de arquitetura e perfis
 
-O escopo do produto especifica dados fictícios no MVP, aplicação TypeScript com domínio determinístico e evolução posterior para dados reais. O `AGENTS.md` registra que a stack/comandos ainda precisam ser verificados no repositório. Portanto, os primeiros itens do plano são descoberta e spike; nomes de pastas, comandos e persistência não são tratados como fatos já existentes.
+O repositório observado contém uma aplicação TypeScript com domínio determinístico, CLI Node e interface React/Vite. Node/npm, scripts e caminhos foram confirmados em INT-00. O `AGENTS.md` versionado no workspace é v1.2 e descreve o MVP; a instrução v1.4 fornecida pelo usuário rege esta iniciativa. Não existe System Design separado nem mecanismo de persistência da carteira. O código e `docs/DECISOES.md` servem como evidência do MVP; este plano e `ESCOPO_PRODUTO_MVP.md` descrevem a evolução, sem converter escolhas futuras em arquitetura já existente.
 
 - **Perfil principal: P3 — motor de cálculos e decisões.** Proveniência, unidades, período econômico, confiança dos dados, reprodução e bloqueios explícitos.
 - **Complementos: P5 — jobs/integrações.** Adaptadores externos, limites, falhas, repetição segura e reconciliação.
@@ -49,8 +57,8 @@ Unidade de implantação deve ser confirmada contra `AGENTS.md` e os documentos 
 
 ## 3. Contratos e decisões que precedem implementação
 
-1. Inventariar campos da política e da recomendação que precisam de dados reais, classes/ativos cobertos (carteira inicial: ITUB4, BBSE3, WEGE3, ABEV3, HGLG11, KNCR11, XPML11, IVVB11 e SCHD) e tolerância temporal por tipo.
-2. Fazer spike brapi com endpoints v2 atuais e amostras representativas para cada classe; registrar cobertura real de ações, FIIs, ETFs/ativos EUA, câmbio, demonstrações e indicadores, plano exigido, quotas, latência, tratamento de `null`, erros, termos/licenças e significado das datas.
+1. Inventariar campos da política e da recomendação que precisam de dados reais, classes/ativos cobertos (carteira ativa: ITUB4, BBSE3, WEGE3, ABEV3, HGLG11, KNCR11, XPML11 e SCHD) e tolerância temporal por tipo.
+2. O spike documental e as chamadas autenticadas Bolsai foram registrados em `docs/VIABILIDADE_FONTES_INT01.md`. Gate A concluiu sem homologar fonte; licenças e pendências remanescentes bloqueiam a ingestão.
 3. Definir matriz campo → definição semântica → unidade/moeda → período → frequência esperada → origem preferencial → fallback → consequência de ausência/conflito. Não mapear métricas homônimas até verificar fórmula/unidade.
 4. Definir catálogo de fontes oficiais/documentos por campo: CVM (DFP/ITR e documentos de companhias/fundos), Banco Central (PTAX quando a política exigir taxa oficial), B3 apenas mediante disponibilidade/termos compatíveis e outras fontes oficiais necessárias. O spike deve confirmar acesso, formato, limites e permissão de retenção.
 5. Definir resolução de identidade: ticker atual/histórico, CNPJ/ID do emissor, classe/tipo de ativo e moeda. Mudança de ticker ou nome não pode associar silenciosamente séries de entidades distintas.
@@ -114,8 +122,8 @@ flowchart TD
 
 | ID | Entrega | Depende de | Saída verificável |
 |---|---|---|---|
-| INT-00 | Alinhamento de escopo, documentos e arquitetura | — | Mapa de requisitos 7.1/7.2, fontes de verdade, stack observada e conflitos documentais resolvidos |
-| INT-01 | Viabilidade das fontes financeiras e de operações | INT-00 | Matriz de cobertura, custos/termos, limites, identidade, timestamps e decisão por campo/fonte |
+| INT-00 | Alinhamento de escopo, documentos e arquitetura | — | `docs/ALINHAMENTO_INT00.md`: mapa de requisitos 7.1/7.2, fontes de verdade, stack observada, conflitos e gates documentados |
+| INT-01 | Viabilidade das fontes financeiras e de operações | INT-00 | `docs/VIABILIDADE_FONTES_INT01.md` e `docs/DECISAO_FONTES_DADOS.md`: matriz por ticker/campo, evidências, termos, limites e go/no-go; aceite técnico ainda pendente |
 | INT-02 | Modelo canônico de ativos, operações, dinheiro e observações | INT-00, INT-01 | Contratos versionados para ativo, evento de carteira, observação de mercado e snapshot |
 | INT-03 | Semânticas contábeis, temporais e de qualidade | INT-02 | Regras versionadas para custo, fluxos, renda, câmbio, frescor, conflito e look-through |
 | INT-04 | Persistência do livro-razão e histórico financeiro | INT-02, INT-03 | Fonte durável aprovada, eventos append-only, constraints e recuperação documentada |
@@ -157,8 +165,8 @@ flowchart TD
 
 ## 7. Critérios de saída do plano
 
-- Toda tarefa no `TASK_INTEGRACAO_DADOS.md` corresponde a exatamente um nó/ID deste grafo; predecessores diretos são idênticos nos dois documentos.
-- Primeiro marco resolve cobertura, acesso, termos e segurança de chave antes de assumir que brapi atende todos os ativos/campos.
+- Toda tarefa no `TASK.md` corresponde a exatamente um nó/ID deste grafo; predecessores diretos são idênticos nos dois documentos.
+- Primeiro marco resolve cobertura, acesso, termos e segurança das credenciais antes de homologar qualquer ativo/campo; bolsai e FMP têm rotas candidatas distintas e não são fallback global um do outro.
 - Nenhuma métrica financeira, freshness threshold, estratégia de conflito ou retenção é inventada para completar o desenho.
 - Há caminho para missing, stale, conflict, correction/provider drift e snapshot reproduzível, com testes (incluindo casos negativos de estados parciais ilegais, identidade instável e precisão de timestamps) antes do código correspondente.
 - Implementação mantém o modo fixtures e inclui fallback seguro claramente identificado (não usar dado fictício como fallback invisível em recomendação real).
@@ -170,10 +178,15 @@ flowchart TD
 
 - `ESCOPO_PRODUTO_MVP.md` — visão, limites do MVP e evolução de dados reais.
 - `AGENTS.md` — estado observado, regras do projeto e fronteiras atuais.
+- `docs/ALINHAMENTO_INT00.md` — evidência do inventário, mapa de requisitos e decisões da INT-00.
+- `docs/VIABILIDADE_FONTES_INT01.md` — consulta documental e evidências da INT-01; lista o que foi e não foi homologado.
 - `GRAFO_DEPENDENCIAS.md` e `TASK.md` — plano original de fixtures a preservar; integração real estava fora daquela fase.
 - Requisitos e System Design vigentes — conferir e resolver sua precedência em INT-00; não presumir que documentos antigos descrevem o código atual.
 - `Politica_Decisao_Motor_Investimentos_v1.md` — critérios do motor; mapear os campos necessários sem alterá-los silenciosamente.
 - `MANUAL_PADRAO_ENGENHARIA(1).md` — ENG, TDD, segurança, integridade, confiabilidade e simplicidade.
 - `PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS(2).md` — núcleo distribuído, com P3/P5 ativos e P4 condicionado a ingestão de eventos/webhooks.
-- Documentação oficial brapi: [OpenAPI](https://brapi.dev/docs/openapi), [ações e ativos](https://brapi.dev/docs/acoes), [dados financeiros](https://brapi.dev/docs/acoes/dados-financeiros), [câmbio](https://brapi.dev/docs/moedas), [versionamento](https://brapi.dev/docs/versioning).
-- Fontes públicas candidatas a validar: [Dados Abertos CVM](https://www.gov.br/cvm/pt-br/centrais-de-conteudo/dados-abertos-cvm), [API PTAX do Banco Central](https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios), [dados históricos B3](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/). A inclusão no plano não presume API gratuita, licença de armazenamento nem suficiência para uso; verificar no spike.
+- `docs/DECISAO_FONTES_DADOS.md` — roteamento provisório, limitações e gates de homologação.
+- `docs/CONTRATOS_INT02.md` — contratos canônicos runtime versionados e invariantes da INT-02.
+- bolsai: [documentação oficial](https://api.usebolsai.com/docs) e [OpenAPI](https://api.usebolsai.com/openapi.json); rotas, planos, respostas autenticadas e lacunas de schema estão descritos em INT-01; sem homologação para uso real.
+- FMP: [documentação oficial](https://site.financialmodelingprep.com/developer/docs), [quickstart/autenticação](https://site.financialmodelingprep.com/developer/docs/quickstart), [planos](https://site.financialmodelingprep.com/developer/docs/pricing) e [termos](https://site.financialmodelingprep.com/terms-of-service); nenhuma chamada foi feita porque os termos exigem autorização escrita para uso na aplicação.
+- Fontes complementares consultadas em INT-01: [CVM — informe de FII estruturado](https://dados.cvm.gov.br/dataset/fii-doc-inf_trimestral), [Banco Central — PTAX](https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios), [B3 — cotações históricas](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/) e [Schwab — SCHD](https://www.schwabassetmanagement.com/products/schd). A documentação consultada não substitui cobertura autenticada e licença aplicável.

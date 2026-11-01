@@ -1,71 +1,86 @@
 # Alinhamento de escopo, documentos e arquitetura — INT-00
 
-Data: 31/10/2026
-Status: concluída; decisões de implementação dependentes de INT-01–04 permanecem abertas conforme os gates registrados abaixo.
+**Data:** 01/11/2026
+**Status:** concluída
+**Resultado:** inventário do MVP e das fronteiras da iniciativa INT; nenhuma integração ou persistência financeira foi implementada.
 
-## Fontes e limites consultados
+## 1. Fontes e precedência
 
-- `ESCOPO_PRODUTO_MVP.md` v1.0: visão, requisitos 7.1/7.2, fronteira do MVP, arquitetura atual do MVP e evolução.
-- `TASK.md` e `GRAFO_DEPENDENCIAS.md` v1.1 na inspeção inicial, alinhados para v1.2 nesta tarefa: plano proposto para a iniciativa de integração e dependências INT-00–13.
-- `AGENTS.md` v1.2 na inspeção inicial (atualizado para v1.3 nesta tarefa), `README.md`, `package.json`, configuração Vite/Playwright, código, fixtures, testes e evidências em `docs/`.
-- `docs/DECISOES.md`: nota ARQ anterior escolhe um núcleo TypeScript compartilhado e adia uma nova fronteira remota/persistente até haver gatilho concreto.
-- `docs/Politica_Decisao_Motor_Investimentos_v1.md`, `docs/MANUAL_PADRAO_ENGENHARIA.md` e `docs/PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS.md`; aplicam-se especialmente ENG-01/02, ARQ-01/02, SEG-02/03, DAD-01–05, OPS-01, DIST-01–04/07–10 e P3/P5.
-- O plano anterior T00–T15 foi consultado na revisão-base `67fc600`; evidências de entrega e da interface V3 permanecem em `docs/ENTREGA_T15.md`, `docs/VALIDACAO.md` e `docs/REFATORACAO_V3.md`.
-
-Não há arquivo independente de requisitos detalhados nem System Design vigente no repositório. O escopo de produto e o plano novo contêm os requisitos de alto nível; o código e o histórico do MVP descrevem a implementação observada. Nenhuma decisão de integração ou persistência foi inferida desses documentos ausentes.
-
-## Estado observado do projeto
-
-- Aplicação TypeScript em um repositório: React 19.3.0/Vite 6.4.3 na interface e módulos locais em `backend/src/` para domínio, caso de uso, adaptadores de fixture, exportação JSON e CLI. Não há serviço de aplicação HTTP.
-- Ambiente declarado: Node `22.11.0`, npm `10.9.0`; observados nesta execução `v22.11.0` e `10.9.0`. `package.json` declara TypeScript 5.9.3, Vitest 4.1.11, Playwright 1.63.0 e versões fixas no lockfile.
-- Scripts existentes em `package.json`: `npm ci`, `npm test`, `npm run test:focused`, `npm run test:integration`, `npm run test:e2e`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm run build:cli`, `npm run cli`, `npm run dev`, `npm run demo` e `npm run preview`. Vite limita dev/preview a `127.0.0.1`. Esta tarefa confirmou os nomes no manifesto; não executou a bateria de testes/build.
-- A interface em `frontend/src/web/App.tsx` constrói um cenário fictício, valida-o e importa diretamente o caso de uso e os módulos locais para executar no navegador. A CLI em `backend/src/cli/cli.ts` também monta fixtures, valida e chama o mesmo caso de uso no processo Node.
-- A decisão arquitetural anterior em `docs/DECISOES.md` continua válida para o MVP: um núcleo compartilhado com adaptadores finos, sem serviço remoto. A nova fase pode estender o monólito se uma fronteira confiável atender ao segredo do provedor e à persistência; isso não implica microserviço.
-- `backend/src/domain/` contém cálculos puros, sem I/O. A busca no código não encontrou chamadas a APIs, adaptadores HTTP, configuração de credencial externa, armazenamento de carteira, banco de dados, job ou scheduler. Os artefatos de build observados são bundles web/CLI; a exportação existente grava JSON da proposta, não posições nem histórico de operações.
-- A carteira atual existe apenas como entrada fictícia em memória. Recarregar a aplicação recompõe a fixture. Não há fonte durável de verdade para posições reais ou eventos executados.
-
-## Requisitos 7.1/7.2: consumidor atual e lacunas
-
-| Requisito | Consumidor atual | Estado e lacuna para a nova fase |
+| Fonte observada | Papel nesta iniciativa | Resultado da leitura |
 |---|---|---|
-| 7.1 — posição, ativo, moeda, quantidade, metas e caixa | `backend/src/domain/input.ts` valida `portfolio.positions` (`ticker`, `currency`, `classId`, `profileId`, `quantity`, `targetBps`) e caixa; `backend/src/domain/portfolio.ts` calcula patrimônio, pesos, déficits e capacidade. | Só há snapshot fictício entregue pela fixture. Não existe cadastro persistente nem ledger. |
-| 7.1 — operações executadas e renda recebida | Nenhum consumidor de eventos financeiros; o orçamento da simulação aceita aporte e caixas já disponíveis na entrada. | Aporte registrado, compra/venda, custo, retirada, provento recebido/anunciado, estorno e ação corporativa ainda não são eventos do domínio. |
-| 7.1 — custo, resultado e exposição | `portfolio.ts`, `backend/src/domain/allocation.ts` e `backend/src/domain/holdings.ts` calculam pesos/exposições para a simulação; `backend/src/domain/money.ts` trata centavos, custos estimados e câmbio. | Não há custo de aquisição da carteira, retorno realizado/não realizado ou renda real. Exposições e look-through são sintéticos. Custo da simulação não é custo gerencial ou fiscal. |
-| 7.2 — preços e câmbio | `backend/src/domain/observations.ts` valida cotações (`priceCents`, moeda, `asOf`, fonte); `input.ts` valida FX e `portfolio.ts` usa os valores para valoração. | Cotação e FX vêm de fixtures; nenhuma fonte externa ou atualização automática existe. |
-| 7.2 — métricas, rubricas e valuation | `observations.ts` valida métrica com unidade, período, publicação/coleta, fonte, método e ajuste; rubrica qualitativa carrega razão e gatilho de revisão; valuation guarda cenários fornecidos. `quality.ts` e `valuation.ts` calculam notas, confiança, elegibilidade, preço-limite e evidências conforme `profiles.ts`/política. | Entradas são fictícias. Valuation fornecido não é estimado pelo motor. As regras atuais não definem autoridade entre fontes externas nem revisão histórica de fornecedor. |
-| 7.2 — setor, grupo e look-through | `input.ts` valida exposições por ticker/setor/grupo; `portfolio.ts` aplica limites; `holdings.ts` calcula evidências agregadas da holding. | Exposições/look-through são sintéticos; não há catálogo externo de identidade, setor, grupo ou composição atualizada. |
-| 7.2 — qualidade, conflitos e reprodução | `input.ts` diferencia campos ausentes e vencidos e sinaliza cobertura de exposição; `quality.ts` avalia cobertura, frescor, rastreabilidade e consistência. `backend/src/application/simulation.ts` retorna snapshot e `decisionId`; `backend/src/adapters/result-json.ts` serializa o resultado. | A validação é para um input de fixture e a consistência segue regras locais limitadas; não há estados persistidos para coleta, indisponibilidade de provedor, conflito multi-origem, revisão ou drift. O snapshot é retornado/exportado, não arquivado como histórico durável. |
+| `ESCOPO_PRODUTO_MVP.md` §§7.1–7.2 | Requisitos do produto completo | Define gestão da carteira, integração de dados, proveniência, atualização e snapshots como evolução posterior ao MVP. |
+| `TASK.md` e `GRAFO_DEPENDENCIAS.md` | Escopo, ordem, gates e aceite da iniciativa | INT-00–INT-13 são um plano; implementação de rede, persistência e operações depende dos gates e predecessores. |
+| `docs/Politica_Decisao_Motor_Investimentos_v1.md` | Regras financeiras | Continua sendo a fonte normativa para critérios do motor; INT-00 não alterou seus parâmetros. |
+| `docs/MANUAL_PADRAO_ENGENHARIA.md` e `docs/PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS.md` | Práticas de engenharia e perfis | Aplicação proporcional de ENG-02, DIST-01/02, P3 e P5; P1 só se a interface mudar; P4 não se aplica a pull REST sem eventos/webhooks. |
+| `AGENTS.md` versionado no workspace | Regras registradas para o MVP | Arquivo v1.2, de 25/09/2026, limitado ao simulador fictício; declara P5 inativo e confirma a ausência de API, banco e serviços. |
+| Instrução `AGENTS.md` v1.4 fornecida pelo usuário nesta sessão | Regras atuais para a execução | Prevalece sobre o arquivo v1.2 do workspace, conforme a precedência declarada pelo próprio usuário. Ativa P3/P5 para a iniciativa e preserva as fronteiras do MVP. |
 
-Os dados atuais chegam por `backend/fixtures/scenarios.ts`; `backend/fixtures/expectations.ts` mantém expectativas de aceitação separadas. A interface e a CLI compartilham `simulateContribution`, mas hoje não compartilham um serviço de coleta ou armazenamento.
+Não foi encontrado documento independente de requisitos nem System Design atual. Os requisitos 7.1/7.2 estão em `ESCOPO_PRODUTO_MVP.md`; o estado arquitetural do MVP é comprovado pelo código, `README.md`, `docs/DECISOES.md`, `docs/VALIDACAO.md` e `docs/ENTREGA_T15.md`. A ausência de System Design foi registrada como lacuna documental, sem inventar uma arquitetura. A atualização editorial do `AGENTS.md` versionado fica como alinhamento documental futuro; durante esta iniciativa, a instrução v1.4 fornecida pelo usuário é a autoridade aplicável.
 
-## Fronteiras e fonte de verdade pretendida
+## 2. Estado real observado
 
-| Estado | Quem pode propor/escrever | Fonte de verdade pretendida | Estado observado |
+| Área | Estado observado | Evidência principal |
+|---|---|---|
+| Runtime e stack | Node 22.11.0, npm 10.9.0, TypeScript 5.9.3, React 19.3.0, Vite 6.4.3, Vitest 4.1.11, Playwright 1.63.0 e ESLint 9.39.5; versões fixadas no manifesto/lockfile. | `.nvmrc`, `package.json`, `package-lock.json`; versões locais conferidas com `node --version` e `npm --version`. |
+| Organização | Um projeto. `backend/src/domain` contém validação e regras puras; `application` coordena o caso de uso; `adapters` concentra fixtures, identidade, serialização e exportação; `cli` é uma interface Node local. `frontend/src/web` usa a mesma aplicação/domínio. | Árvore de `backend/src`, `backend/fixtures`, `frontend/src/web` e `tests/`. |
+| Interfaces | CLI local e interface React/Vite. `npm run dev`, `demo` e `preview` usam `127.0.0.1`; o Vite serve a aplicação e não implementa API de negócio. | `package.json`, `vite.config.ts`, `frontend/src/web/App.tsx`, `backend/src/cli`. |
+| Entrada atual | Cenários fictícios versionados em `backend/fixtures`; o parser valida snapshot, política, posições, caixa, cotações, métricas, exposições, rubricas, valuation, custos e FX antes da simulação. | `backend/fixtures/scenarios.ts`, `backend/src/domain/input.ts`, `observations.ts`, `fixture-json.ts`. |
+| Persistência | Não há banco nem armazenamento durável de carteira, eventos ou recomendações. O estado da tela é transitório. A CLI publica JSON local; o navegador inicia download e não confirma gravação em disco. | `backend/src/adapters/file-export.ts`, `frontend/src/web/App.tsx`, `README.md`, busca no código por banco, armazenamento e rede. |
+| Integrações e credenciais | Não há chamada HTTP, adaptador de provedor, chave de API ou processo servidor confiável para a UI. O diretório `backend/` não é serviço HTTP. | Busca no código de `fetch`, clientes HTTP, credenciais e tecnologias de banco; `AGENTS.md`, `README.md`. |
+| Agendamento | Não há worker, fila ou scheduler. A aplicação não coleta dados quando fechada. | `package.json` e busca no código por scheduler/execução periódica. |
+| Testes e comandos | `npm run` confirmou os scripts disponíveis: testes Vitest, integração, e2e, typecheck, lint, build web e build CLI. Não foram executados nesta tarefa documental. A evidência anterior de aceitação está em `docs/VALIDACAO.md` e `docs/ENTREGA_T15.md`. | `package.json`, `README.md` e documentação de T14/T15. |
+
+## 3. Matriz de requisitos 7.1 e 7.2
+
+### Dados consumidos pelo fluxo atual do motor
+
+| Etapa | Dados consumidos | Saída usada pela etapa seguinte | Limite atual |
 |---|---|---|---|
-| Posição de abertura e eventos de carteira | Usuário, por cadastro manual; qualquer importação futura entra pendente e exige conciliação/aceite explícito. | Posição de abertura mais eventos confirmados, append-only; estorno/retificação referencia o evento original. | Não existe hoje. INT-02/03 definem semântica; INT-04 escolhe mecanismo e INT-06 implementa registro. |
-| Observação de mercado/fundamento | Adaptador de fonte aprovada, após validação e normalização; fornecedor não escreve posição. | Observações versionadas com proveniência e permissão de retenção; correção cria nova versão. | Não existe coleta externa. INT-01 valida fontes; INT-05/07 tratam integração e atualização. |
-| Projeção de carteira e recomendação | Motor, a partir de entradas aceitas e snapshot explícito. | Valor, custo, exposição e resultado são projeções calculadas; recomendação preserva snapshot imutável e não altera o ledger. | Só há projeção da simulação fictícia, sem persistência. |
-| Credencial do provedor | Processo confiável, fora do bundle React; privilégio mínimo. | Configuração segura no processo que executa o adaptador, sem token em UI, URL, fixture ou log. | Não há credencial nem processo de backend web. O CLI Node é local, mas a UI executa o motor e os imports de `backend/src` no navegador. Portanto a integração web não pode receber segredo até que o Gate D escolha uma fronteira confiável. |
+| Qualidade | `marketSnapshot.metrics` e rubricas qualitativas; regra/unidade/perfil; período, publicação, coleta, fonte e método. | Nota de qualidade, confiança, cobertura, frescor, consistência, evidências e códigos de motivo. | Observações são fixtures/input local; não há coleta nem política de conflito entre provedores. |
+| Valuation | Cotação e moeda; cenários de valuation fornecidos (conservador/base/favorável); métricas; resultado da qualidade; perfil, regras e limites da política. | Nota de preço, margem de segurança, teto, estado de valuation e evidências. | Cenários são fornecidos por fixture, não calculados a partir de demonstrações obtidas externamente. |
+| Elegibilidade | Qualidade/confiança, valuation/teto, perfil, regra versionada e `previousEligibility` quando presente; métricas de execução para ETF amplo. | Estado full/conditional/hold/watch/review-exit, bloqueios, restrições e códigos de motivo. | Não há histórico real de estados ou ciclo de revisão persistente. O bloqueio de compra de SCHD permanece explícito. |
+| Carteira e alocação | Posições simuladas e quantidades; caixa liberado/reinvestível; aporte; cotação, FX, custos; alvos e limites por classe/ativo; exposição setorial e de grupo. | Valor e pesos antes/depois/alvo, déficit/capacidade, prioridade, linhas inteiras, custos reservados e saldo. | É projeção para a simulação atual; não representa saldo ou exposição reais nem inclui custo de aquisição histórico. |
+| Justificativa e saída | Evidências, avaliações, decisões e códigos de motivo produzidos pelo mesmo caso de uso. | Explicações, compras, exclusões, snapshot, `decisionId` e avisos serializados para CLI/UI. | Explicações não são cálculo independente; exportar ou baixar a proposta não confirma uma operação. |
 
-O desenho de produto pretendido continua sendo uma aplicação pessoal, não multiusuário, sem envio de ordens. Atualização automática significa buscar dados ausentes/vencidos no fluxo de análise quando fonte e política permitirem; não significa coleta com o aplicativo fechado. Importação de operações permanece condicional ao Gate F. A tecnologia de persistência e qualquer mecanismo servidor/local confiável para a UI são decisões futuras, não fatos do repositório.
-
-## Divergências, decisões e responsáveis/gates
-
-| Tema | Alinhamento ou pendência | Responsável/gate |
+| Requisito | Consumidor atual e dados usados | Estado e lacuna para a iniciativa |
 |---|---|---|
-| `AGENTS.md` ainda descrevia apenas o MVP, com P5/API/banco como inativos “nesta fase”. | Mantido como histórico do MVP; atualizado para distinguir a iniciativa INT e seus gates, sem autorizar integração antecipada. | INT-00; revisão do responsável do produto. |
-| Um monólito TypeScript existente versus uso futuro da palavra `backend`. | `backend/src` é um módulo local usado pelo bundle web e pela CLI, não um serviço HTTP. Preservar um projeto/núcleo compartilhado; criar somente a menor fronteira confiável que o Gate D demonstrar necessária. | Responsável do produto/arquitetura; Gate D antes de INT-05. |
-| O texto inicial do novo `TASK.md` dizia que `AGENTS.md` não confirmava stack/comandos. | Corrigido: stack e scripts estão no repositório e foram conferidos no `package.json`, `README.md`, configurações e runtime observado. | INT-00 concluída. |
-| Nomes dos planos em referências internas não correspondiam aos arquivos atuais; os nomes `TASK.md` e `GRAFO_DEPENDENCIAS.md` agora designam a iniciativa INT. | Referências internas alinhadas. A versão anterior T00–T15 foi lida na revisão-base `67fc600`; evidências locais continuam em `docs/`. | INT-00 concluída. |
-| Requisitos detalhados/System Design independentes não foram encontrados. | Para esta fase, usar `ESCOPO_PRODUTO_MVP.md` §§7.1/7.2 como requisito de produto e o plano INT como sequência proposta, sempre conferindo o código. Se houver artefato vigente adicional, o responsável do produto deve incorporá-lo antes de decisão incompatível. | Responsável do produto; reconfirmar antes de INT-02/04. |
-| Segredo externo em fluxo web. | Lacuna arquitetural bloqueia integração que exponha token no browser. Escolher processo confiável mínimo ou restringir o fluxo real a processo que proteja a chave; não assumir API pública, serviço independente ou token no cliente. | Responsável do produto/arquitetura; Gate D, antes de INT-05. |
-| Persistência e retenção. | Fonte lógica planejada é ledger de eventos aceitos e observações/snapshots imutáveis. Banco/arquivo, formato, retenção e backup não foram escolhidos. | INT-02/03 definem contratos e semântica; INT-04 decide tecnologia e Gate C valida licença antes de guardar payload. |
-| Custo gerencial, venda parcial, renda, retorno, FX por data-base, ações corporativas, tolerância temporal e autoridade em conflito. | Não definidos pela implementação atual; sem valores ou fórmulas presumidos. | Responsável do produto; INT-02/03 e Gates B/E antes de cálculo/recomendação real. |
-| Importação de operações. | Sem conector/fonte verificada no repositório; fluxo manual é o caminho inicial planejado. | INT-01 decide go/no-go independente; Gate F antes de INT-11. |
+| 7.1 — posição inicial, quantidade, classe, perfil e moeda | `parseSimulationInput` valida posições por ticker, moeda, classe, perfil, quantidade inteira e peso-alvo. `analyzePortfolio` combina quantidade com cotação e FX. | Só existe posição de simulação fornecida por fixture/input. Não há preço de aquisição, posição de abertura persistida nem livro-razão real. Modelo/registro manual estão em INT-02/03/04/06. |
+| 7.1 — caixa, aporte e reinvestimento | Entrada contém caixa e valores liberados/reinvestíveis; `allocateContribution` distribui aporte e saldo usando custos e FX explícitos. | Valores pertencem ao cenário, não a um saldo persistente. Sem eventos de aporte, retirada, compra ou provento. Semântica contábil fica em INT-03; persistência em INT-04. |
+| 7.1 — compras, vendas, proventos e custos realizados | Nenhum consumidor de eventos realizados existe no domínio atual. A saída descreve compras propostas, custos estimados e quantidades simuladas. | Recomendação não é execução. Eventos aceitos, correções/estornos e registro manual são futuros; INT-06 depende de INT-02/03/04. Importação externa é condicional em INT-11. |
+| 7.1 — valor, pesos, exposição e limites | `portfolio.ts` calcula valor simulado, pesos, déficits e capacidades; `allocation.ts` revalida custos, exposição setorial/grupo e limites após as compras propostas. | Não calcula custo gerencial, retorno realizado/não realizado ou renda recebida a partir de eventos reais. Look-through real depende de composição e proveniência aprovadas. INT-03/08 definem semântica e projeções. |
+| 7.1 — proposta, confirmação e histórico | `simulateContribution` gera `decisionId`, snapshot de entrada, avaliações, compras, exclusões, alocações e avisos. UI/CLI exibem ou exportam a saída. | Snapshot é reproduzível no resultado/exportação, mas não é guardado como histórico durável; não há fluxo que confirme execução ou atualize posição. Gates de persistência e registro: INT-04/06/09/10. |
+| 7.2 — cotação, FX, demonstrações, indicadores e documentos | O motor recebe cotações, câmbio, métricas e evidências previamente montadas em fixtures. | Nenhum provedor ou documento oficial é consultado. Fontes candidatas de `docs/DECISAO_FONTES_DADOS.md` não estão homologadas; INT-01 decide cobertura, semântica, acesso, custo, licença e retenção por ativo/campo. |
+| 7.2 — unidade, período, origem e atualidade | Observações atuais carregam fonte, período, publicação, coleta, método e ajustes; cotação tem fonte e data. `evaluateQuality` calcula cobertura, confiança, frescor e consistência. | A validação/refinamento de contratos canônicos para integração real depende de INT-02/03. Os campos atuais foram desenhados para fixtures e não provam cobertura ou identidade de provedor. |
+| 7.2 — ausência, vencimento, conflito e revisão | Parser e motor reconhecem ausências/invalidade e dados vencidos; o resultado explicita evidências e motivos. | Ainda não existe ciclo de coleta, comparação entre provedores, detecção de revisão ou recuperação. Semântica e política ficam em INT-03; adaptadores em INT-05; atualização sob demanda em INT-07. |
+| 7.2 — snapshot histórico da recomendação | Resultado inclui snapshot original, versões e identidade determinística da decisão. | Não existe armazenamento histórico. Snapshots de decisões futuras devem permanecer imutáveis e legíveis após nova coleta/regra; INT-04/09 definem persistência e reprodução. |
 
-## Resultado e verificações
+## 4. Fonte de verdade e fronteiras
 
-- MVP fictício e evolução INT ficaram explicitamente separados; nenhuma regra financeira, coleta ou mutação foi implementada nesta tarefa.
-- Árvore, importações, manifestos, comandos, runtime, documentação e dependências foram inspecionados. Ausência de serviço/API/banco/scheduler foi verificada por busca no código e no manifesto.
-- Comandos foram confirmados por definição em `package.json`, não executados. Nenhum teste automático foi necessário para este artefato documental.
-- Próximos passos desbloqueados: INT-01 pode executar o spike de viabilidade; INT-02 depende também do resultado de INT-01. INT-05 permanece bloqueada pelo Gate D até decisão de fronteira confiável; INT-04 aguarda contratos/semânticas e decisão de retenção.
+| Estado | Fonte de verdade observada ou planejada | Quem pode alterá-lo |
+|---|---|---|
+| Simulação MVP | Input validado e snapshot original da fixture/cenário; política versionada. | Nenhuma mutação de posição; editar input cria outra simulação. |
+| Posição/carteira real futura | Posição de abertura e eventos efetivamente executados, depois de confirmados. Valores, custo, caixa, exposições e retorno serão projeções reconstruíveis, não campos independentes editáveis. | Fluxo manual autorizado em INT-06; importação só após staging/conciliação/aceite em INT-11. Persistência e correções dependem de INT-04/03. |
+| Dados de mercado futuros | Observações normalizadas de fonte aprovada por campo, com identidade, semântica, unidade/moeda, período, timestamps e proveniência. | Adaptadores de INT-05/07; revisão gera nova observação, sem sobrescrever snapshot histórico. Fonte permanece pendente de INT-01. |
+| Recomendação | Resultado determinístico associado ao snapshot de inputs, política e versão do motor. | Gerar proposta não registra operação nem altera carteira. Persistência futura depende de INT-04/09. |
+
+O motor continua sem I/O; UI/CLI → aplicação → domínio; adaptadores fazem leitura/exportação. Hoje não existe processo servidor conectado ao navegador. Qualquer chave futura deve ficar em processo confiável fora do bundle/browser. A escolha de fronteira local/servidor e configuração segura fica explicitamente para o **Gate D**, antes de INT-05; nenhuma chave ou solução de backend foi presumida.
+
+## 5. Atualização, lacunas e gates
+
+- “Atualização automática” significa buscar, ao iniciar uma análise/recomendação solicitada pelo usuário, campos ausentes ou vencidos que a fonte e a política permitirem atualizar. Isso exige um processo ativo. Não promete coleta com a aplicação fechada e não implica scheduler permanente.
+- A posição só muda por registro explícito de operação real confirmada; atualizar dados de mercado ou recalcular a tela não atualiza carteira.
+- Fontes por ativo/campo, planos, semântica, termos e direitos de uso/armazenamento: pendentes de INT-01/Gate A. IVVB11 segue sem rota aprovada; as fontes candidatas para Brasil, SCHD e FX são apenas hipóteses registradas em `docs/DECISAO_FONTES_DADOS.md`.
+- Identidade estável, schemas de runtime e campos canônicos: INT-02; a semântica e compatibilidade são avaliadas no Gate B após INT-02/03. Ticker sozinho não será identidade estável.
+- Custo gerencial, renda, retorno, câmbio, frescor, conflitos, correções e look-through: decisões financeiras ainda sem método aprovado; responsável decisório é o usuário/proprietário do produto, com proposta/evidência preparada nas INT-02/03. Não usar esses valores em recomendação real antes da decisão.
+- Persistência, retenção, migração/backup, concorrência e recuperação do livro-razão e snapshots: INT-04, após contratos/semânticas. A fonte pretendida é append-only; tecnologia e garantias permanecem abertas.
+- Importação de operações de corretora: sem fonte comprovada ou credenciais; não habilitada até INT-01/Gate F. O fluxo manual de INT-06 permanece o caminho previsto.
+- Requisito de API/serviço externo confiável para credenciais não existe no MVP. A decisão mínima e o dono do segredo são Gate D; não implementar endpoint ou servidor independente nesta fase.
+- A divergência do `AGENTS.md` local (v1.2/MVP) com a instrução v1.4 fornecida pelo usuário foi resolvida pela precedência explícita da instrução atual. A sincronização do arquivo/índice documental pode ocorrer em INT-13, se as regras ou decisões operacionais mudarem.
+- Os documentos não nomeiam responsáveis individuais. Aprovações de fontes/licenças (INT-01/Gate A), identidade e semântica de dados (INT-02/03/Gate B), persistência/recuperação e retenção (INT-04/Gate C) e fronteira de credenciais (Gate D) ficam com o usuário/proprietário do produto; a execução técnica permanece na tarefa INT correspondente.
+
+## 6. Verificação e limite
+
+- Conferidos árvore, `AGENTS.md`, `TASK.md`, `GRAFO_DEPENDENCIAS.md`, `ESCOPO_PRODUTO_MVP.md`, política financeira, Manual, Perfis, planos anteriores e módulos de entrada, domínio, aplicação, adaptadores, CLI e UI.
+- Confirmados Node `v22.11.0`, npm `10.9.0` e scripts declarados pelo `package.json`; nenhum caminho/comando foi inferido como existente sem inspeção.
+- Busca no código de chamadas HTTP, persistência de carteira, banco e scheduler não encontrou essas integrações; a escrita local existente é exportação de JSON.
+- Dispensa TDD-04: entrega exclusivamente documental. Não foram executados testes, typecheck, lint ou build; nenhuma lógica ou regra financeira foi alterada.

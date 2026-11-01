@@ -286,6 +286,7 @@ Essa direção não faz parte do compromisso atual de implementação. O MVP exi
 | `GRAFO_DEPENDENCIAS.md` | Define arquitetura, dependências e marcos de implementação |
 | `TASK.md` | Define requisitos, contratos, tarefas, cenários e conclusão |
 | `AGENTS.md` | Define regras obrigatórias para o agente implementador |
+| `docs/DECISAO_FONTES_DADOS.md` | Registra roteamento provisório de fontes externas e gates de homologação |
 | `MANUAL_PADRAO_ENGENHARIA.md` | Define práticas comuns de engenharia, TDD, segurança e integridade |
 | `PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS.md` | Especializa o projeto como P3, com complemento P1 |
 

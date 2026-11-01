@@ -1,11 +1,18 @@
 # Plano de tarefas — gestão da carteira e integração de dados
 
-Versão 1.2 · 31/10/2026  
-Status geral: **planejado; todas as tarefas pendentes**  
-Fonte de dependências: `GRAFO_DEPENDENCIAS_INTEGRACAO_DADOS.md`  
+Versão 1.6 · 01/11/2026
+
+Status geral: **INT-00, INT-01 e INT-02 concluídas; INT-03–INT-13 pendentes**
+
+Fonte de dependências: `GRAFO_DEPENDENCIAS.md`
+
 Escopo: implementar em fases os requisitos 7.1 e 7.2 do produto completo, preservando o MVP de fixtures e sem executar ordens
 
-Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados parciais ilegais, identidade estável vs ticker, precisão de timestamps), obrigatoriedade de casos negativos no TDD e alinhamento com Manual/Perfis v1.1.
+Alterações 1.6: INT-01 concluiu a avaliação no-go sem homologar fonte real; INT-02 concluiu contratos runtime versionados, invariantes negativas e casos TDD em `docs/CONTRATOS_INT02.md`.
+
+Alterações 1.5: INT-01 documentou planos, termos, rotas candidatas, uma consulta PTAX real e go/no-go independente para importação; fontes de mercado permanecem bloqueadas até cobertura autenticada e permissões de exibição/retenção comprovadas em `docs/VIABILIDADE_FONTES_INT01.md`.
+
+Alterações 1.4: INT-00 concluída com inventário do estado real, matriz de requisitos e decisões/gates registrados em `docs/ALINHAMENTO_INT00.md`; stack e comandos confirmados; persistência e fronteira de credenciais permanecem nos gates previstos.
 
 ## 1. Como usar este plano
 
@@ -13,7 +20,7 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 - As tarefas deste arquivo são planos, não evidência de implementação. Não marcar nada como concluído antes de execução e revisão.
 - IDs, dependências e critérios de saída devem permanecer alinhados ao grafo.
 - Ler `AGENTS.md`, requisitos e System Design vigentes; resolver eventuais divergências com o escopo antes de decidir persistência ou fronteira de execução. Consultar as seções aplicáveis do Manual e dos Perfis: ENG-01/02, TDD-01–05, COD-02/03, ARQ-01/02, SEG-01–04, DAD-01–05, OPS-01–03, DIST-01–10 e P3/P5; P1 para interface tocada. P4 é N/A para pull REST, salvo se forem adicionados eventos/webhooks.
-- Inspecionar o repositório e reaproveitar convenções, scripts, estrutura e mecanismo de persistência que existirem. O `AGENTS.md` atual informa que stack/comandos ainda precisam ser confirmados; não inventar comando nem caminho.
+- Inspecionar o repositório e reaproveitar convenções, scripts, estrutura e mecanismo de persistência que existirem. INT-00 confirmou Node 22.11.0/npm 10.9.0, scripts do `package.json` e ausência de persistência de carteira; não inventar comando nem caminho.
 - Não iniciar integração real antes do spike confirmar cobertura, acesso, termos/licenças, identidade dos campos e tratamento seguro de credenciais.
 - Configuração numérica, período de atualização, retenção e precedência de fontes são decisões pendentes até haver evidência/aprovação registrada.
 - Distinguir registro manual de operações executadas da importação condicional de uma fonte externa. Nenhuma ordem é enviada pelo sistema; nenhuma operação importada entra na carteira sem conciliação e confirmação explícita.
@@ -29,7 +36,7 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 - Cobertura parcial nunca é exibida como cobertura total. Um campo/ativo sem dado admissível segue bloqueio ou parcialidade explicitamente definidos pelo contrato/política.
 - Provedor lento/indisponível, 401/403, 404, 429, 5xx, JSON inválido, `null`, mudança de esquema e timeout não produzem valor plausível fabricado nem sucesso falso.
 - Nova coleta é segura para retry e não duplica estado lógico. Resultado remoto incerto e falhas parciais podem ser identificados e conciliados.
-- O token da brapi não aparece no navegador, repositório, fixture ou log; testes normais não acessam serviço pago/dados reais.
+- Credenciais de bolsai, FMP e demais fontes não aparecem no navegador, bundle, repositório, fixture ou log; testes normais não acessam serviço pago/dados reais. A chave FMP enviada como parâmetro de consulta deve ser redigida em logs, traces e diagnósticos.
 - O motor continua determinístico e sem I/O; fixtures permanecem disponíveis para desenvolvimento e regressão.
 - Nenhum ativo passa a receber recomendação real até os campos obrigatórios, regras temporais e confiança de dados serem aprovados para o seu perfil.
 - Compras, vendas, aportes e proventos registrados correspondem a eventos reais, confirmados pelo usuário. Uma sugestão, provento anunciado ou valor estimado não altera posição ou caixa.
@@ -46,8 +53,11 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-00 — Alinhar escopo, documentos e arquitetura do projeto
 
-**Depende de:** —  
+**Depende de:** —
+
 **Perfil:** P3, P5; ENG-02, DIST-01/02
+
+**Status:** concluída em 01/11/2026; evidência em `docs/ALINHAMENTO_INT00.md`.
 
 **Objetivo:** estabelecer o estado real do projeto e tornar coerentes os requisitos 7.1/7.2, as decisões de arquitetura e as fronteiras já implementadas antes de planejar persistência ou fontes externas.
 
@@ -65,33 +75,46 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 **Aceite:** inventário cobre 7.1/7.2, stack real ou ausente, interfaces, persistência e fonte de verdade pretendida; a distinção MVP/fases seguintes é inequívoca; conflitos e decisões em aberto têm responsáveis/gates. Nenhum comando ou caminho foi inventado.
 
+**Conclusão (01/11/2026):** a matriz requisito→consumidor→estado, o inventário da stack/interfaces/persistência, a hierarquia documental e as decisões em aberto foram registrados em `docs/ALINHAMENTO_INT00.md`. Não foi implementado acesso de rede, persistência de carteira ou alteração de comportamento do MVP. INT-01 foi concluída como avaliação de viabilidade; os Gates B–G continuam condicionados às tarefas predecessoras.
+
 #### INT-01 — Validar fontes de dados e viabilidade de importação de operações
 
-**Depende de:** INT-00  
+**Status (01/11/2026):** concluída como avaliação de viabilidade, com resultado no-go para recomendação real. Chamadas autenticadas Bolsai cobriram cotações/fundamentos de quatro ações e perfis de três FIIs (HTTP 200); rotas históricas, demonstrações e proventos testadas responderam HTTP 403. Moeda, frescor, identidade estável e licença/retenção não foram comprovados. FMP ficou sem chamadas por exigir aprovação escrita para a aplicação. PTAX serve apenas como referência após resolver precisão/fuso. Importação de operações não habilitada. Nenhuma fonte foi homologada. Evidências em `docs/VIABILIDADE_FONTES_INT01.md` e decisão em `docs/DECISAO_FONTES_DADOS.md`.
+
+**Depende de:** INT-00
+
 **Perfil:** P5 + P3; OPS-01, SEG-02/03, DIST-02/03/04/09
 
-**Objetivo:** verificar cobertura, semântica, acesso, licença, custo e confiabilidade das fontes candidatas para 7.2 e, em separado, se existe uma fonte segura de operações realizadas para o item condicional de 7.1.
+**Objetivo:** homologar cobertura, semântica, acesso, licença, custo e confiabilidade por fonte, ativo e campo, além de decidir separadamente se existe uma fonte segura de operações realizadas.
+
+**Roteamento avaliado (nenhuma fonte homologada):** bolsai para ações e FIIs brasileiros; FMP para SCHD; Banco Central/PTAX para câmbio oficial. CVM e documentos de emissores/administradores são complementos avaliados por campo. Não presumir que qualquer API cobre todos os tickers, classes ou métricas.
 
 **Trabalho:**
 
-1. Consultar OpenAPI e documentação atual brapi; priorizar `/api/v2` para integração nova e registrar que a rota legada de quote tem recomendação de migração, não copiar contratos antigos por conveniência.
-2. Testar amostra representativa da carteira: ações brasileiras, FIIs, IVVB11 e SCHD/ETF estrangeiro conforme ticker aceito; verificar preço, histórico, indicadores, demonstrações e moeda por ativo/campo.
-3. Testar câmbio USD-BRL e fonte oficial do BCB/PTAX; distinguir PTAX de fechamento, taxa de referência e taxa realmente executável.
-4. Confirmar cobertura de relatórios/indicadores dos FIIs e disponibilidade de origem/datas de publicação; não extrapolar comportamento de ações para FIIs.
-5. Confirmar origem, frequência, data-base, identificador e permissão de uso para setor/grupo econômico e para composição/look-through de FIIs/ETFs; avaliar cobertura e dados não classificados por ativo.
-6. Para CVM, B3 e documentos de emissores/fundos, confirmar formato, identificadores, frequência, licença/termos, limites, acesso automatizável, correções históricas e possibilidade de reter payload ou somente hash/referência.
-7. Avaliar plano/preço atual, autenticação, limites e rate limits, quotas, campos nulos, símbolos renomeados, códigos HTTP, headers de descontinuação e termos de armazenamento/uso pessoal.
-8. Armazenar respostas de teste só de modo autorizado e sanitizar qualquer dado/segredo antes de registrar evidência. Nenhum token real em commit ou log.
-9. Verificar se existe fonte confiável para importar operações realizadas (corretora, extrato exportado ou outro conector); não pressupor cobertura nem pedir credenciais de corretora se a integração não estiver aprovada.
-10. Criar decisão curta: campo coberto pela brapi, campo que requer fonte oficial ou está sem fonte; classificar importação de operações como habilitada ou fora do marco por falta de fonte/confiabilidade.
+1. Consultar a documentação oficial vigente de bolsai e FMP e registrar data, endpoints atuais, autenticação, planos, limites, cobertura, esquemas, termos e permissões de uso/retenção.
+2. Testar tickers e campos da carteira ativa individualmente: ITUB4, BBSE3, WEGE3, ABEV3; HGLG11, KNCR11, XPML11; SCHD. Validar preço, histórico, moeda, fundamentos, demonstrações, dividendos/distribuições, perfil/custos e composição/look-through quando necessários.
+3. Para bolsai, verificar disponibilidade por ticker dos dados de ações, fundamentos, dividendos e FIIs. Confirmar semântica e data de cada campo, especialmente para bancos, holdings e FIIs.
+4. Para FMP, consultar plano, termos e cobertura documental; não chamar a API enquanto a autorização escrita exigida para integrar/exibir/reter não existir.
+5. Testar câmbio USD-BRL e fonte oficial BCB/PTAX; distinguir taxa de referência, fechamento e taxa executável. Cotação cambial comercial não substitui PTAX quando a regra pedir taxa oficial.
+6. Para cada campo, registrar origem preferencial e eventual fonte secundária. Só permitir fallback após comprovar mesma definição, unidade, moeda, período, base de ajuste e atualidade admissível; caso contrário, a divergência permanece explícita e pode bloquear o campo.
+7. Para CVM, B3 e documentos de emissores/fundos, confirmar identificadores, formato, frequência, licença/termos, limites, acesso automatizável, correções históricas e possibilidade de reter payload ou somente hash/referência.
+8. Verificar permissões de uso pessoal local, exibição na ferramenta e retenção de snapshots segundo os termos vigentes; não presumir que uso individual autoriza exibir ou persistir dados.
+9. Avaliar planos/preços, autenticação, limites, quotas, campos nulos, símbolos renomeados, respostas HTTP, headers de descontinuação e políticas de armazenamento. Registrar evidência datada, sem colocar chaves ou respostas restritas em commit/log.
+10. Avaliar importação de operações realizadas separadamente; não pressupor cobertura de corretora nem solicitar credenciais de corretora sem aprovação específica.
+11. Criar ou atualizar `docs/DECISAO_FONTES_DADOS.md` com matriz ativo × campo × provedor × endpoint × plano × permissão × estado; classificar importação de operações como habilitada ou fora do marco.
 
-**Testes/verificação:** teste exploratório descartável permitido sem TDD (TDD-04); validar exemplos contra schema/OpenAPI e registrar data da consulta; não declarar integração pronta com base em uma resposta 200.
+**Testes/verificação:** teste exploratório descartável permitido sem TDD (TDD-04); validar exemplos contra schemas/OpenAPI e registrar a data da consulta. Não declarar integração pronta com base em uma resposta 200 ou na documentação promocional.
 
-**Aceite:** matriz por campo/ativo contém fonte, endpoint/arquivo, unidade, timestamps, plano/termos, limites, armazenamento permitido e lacunas, incluindo setor/grupo e composição look-through. A importação possui decisão independente de go/no-go e critérios de confiabilidade. Nenhuma fonte é considerada suficiente por presunção.
+**Aceite:** matriz por campo/ativo contém fonte e endpoint comprovados, identificador, definição/unidade/moeda/período, timestamps, plano/termos, limites, armazenamento permitido e lacunas, incluindo composição look-through quando necessária. Bolsai e FMP não são intercambiáveis nem fallback global um do outro. A importação possui decisão independente de go/no-go. Nenhum ativo sem cobertura admissível recebe recomendação real.
+
+**Conclusão (01/11/2026):** matriz ativo × campo atualizada com status HTTP autenticados, schemas/campos, nulabilidade, limitações de identidade/moeda/tempo, planos e termos. O resultado é no-go para fontes de recomendação real e não habilita ingestão; importação de operações foi decidida separadamente como não habilitada. INT-01 está concluída como avaliação, e os bloqueios permanecem gates para INT-05.
 
 #### INT-02 — Especificar contratos canônicos de ativos, operações e dados financeiros
 
-**Depende de:** INT-00, INT-01  
+**Depende de:** INT-00, INT-01
+
+**Status:** concluída em 01/11/2026; contratos e evidências em `backend/src/domain/contracts.ts`, `tests/domain/contracts.test.ts` e `docs/CONTRATOS_INT02.md`.
+
 **Perfil:** P3 + P5; TDD-03, DAD-01/04, DIST-02
 
 **Objetivo:** desacoplar o domínio dos fornecedores, definir eventos financeiros e tornar explícita a semântica de cada métrica usada na carteira e no motor.
@@ -119,11 +142,14 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 **Aceite:** contratos cobrem todos os campos de 7.1/7.2 ou registram lacunas; posição não pode ser alterada por payload externo não revisado; valores e eventos possuem tipo/unidade/moeda/data e origem explícitos. Testes rejeitam payload e operação ambíguos **e rejeitam explicitamente os estados proibidos listados nas invariantes**.
 
+**Conclusão (01/11/2026):** schemas de runtime versionados para ativos, composição, posições, eventos/lotes, caixa, observações, documentos, coletas, qualidade, transformações e snapshots foram implementados. Invariantes de identidade, valuation parcial, timestamps, precisão monetária, proveniência e imutabilidade têm testes negativos. Os 10 testes focados e a suíte completa (328 testes em 22 arquivos, execução sequencial), typecheck, lint e build passaram. Uma execução paralela com build atingiu timeout em três testes UI preexistentes; a repetição sequencial passou. A correção posterior da revisão acrescentou dois testes negativos para divergência entre valores e preço original não positivo: 12 testes focados, typecheck e lint passaram. Evidências em `docs/CONTRATOS_INT02.md`. Sem persistência, adaptação de provedores ou alteração do MVP.
+
 ### Fase B — Qualidade, histórico e snapshots
 
 #### INT-03 — Definir semânticas de carteira, qualidade e avaliação temporal
 
-**Depende de:** INT-02  
+**Depende de:** INT-02
+
 **Perfil:** P3 + P5; DAD-01/04, OPS-01, DIST-03/04/08. P4 permanece N/A sem ingestão de eventos.
 
 **Objetivo:** definir as regras de significado e cálculo que impedem confundir dinheiro aportado, custos, renda, resultado e confiança dos dados.
@@ -153,7 +179,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-04 — Projetar persistência do livro-razão e histórico financeiro
 
-**Depende de:** INT-02, INT-03  
+**Depende de:** INT-02, INT-03
+
 **Perfil:** P3 + P5; DAD-01–05, DIST-01/05/06/07/08/10
 
 **Objetivo:** definir a menor fonte durável de verdade para eventos aceitos da carteira, observações de mercado e snapshots reproduzíveis, em coerência com a arquitetura aprovada no INT-00.
@@ -176,32 +203,36 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 ### Fase C — Dados, livro-razão e projeções da carteira
 
-#### INT-05 — Implementar adaptadores e normalizadores de fontes aprovadas
+#### INT-05 — Implementar adaptadores e normalizadores das fontes homologadas
 
-**Depende de:** INT-01, INT-02, INT-03, INT-04  
+**Depende de:** INT-01, INT-02, INT-03, INT-04
+
 **Perfil:** P5 + P3; TDD-01/03, SEG-02/03, OPS-01, DIST-02/03/04/09
 
-**Objetivo:** obter dados reais sob contratos explícitos sem acoplar o motor à brapi ou ao layout de arquivos externos.
+**Objetivo:** obter dados reais de bolsai, FMP e fontes oficiais aprovadas sob contratos explícitos, sem acoplar o motor financeiro ao fornecedor ou ao layout dos arquivos externos.
 
 **Trabalho:**
 
-1. Criar interface mínima de fonte/transport e adaptadores somente para fontes aprovadas no INT-01. Sem abstração universal de provedores.
-2. Guardar token no processo confiável/configuração local protegida; validar configuração ao iniciar, redigir segredo de erros/logs e não embutir segredo no navegador.
-3. Usar endpoint/versionamento vigente, parâmetros/campo apenas após validar docs e plano; registrar campo ausente, endpoint e versão da API quando disponível.
-4. Aplicar timeout de conexão/leitura e prazo total; limitar tamanho de resposta, lote e concorrência por limites documentados; não inventar limites se ainda não se conhece o provedor.
-5. Retry apenas em falhas transitórias seguras, limitado, com backoff/jitter quando apropriado; não repetir 4xx permanentes, não repetir em cascata entre SDK/adaptador/orquestrador.
-6. Validar payload em runtime antes de normalizar. Classificar 401/403, 404, 429, 5xx, corpo malformado, schema drift e timeout; respeitar headers de rate limit/deprecation quando fornecidos.
-7. Mapear preço, moeda, fator de ajuste, câmbio, demonstrações e métricas com teste de golden representativo e fonte documentada. Capturar diferenças entre original e ajustado; não somar unidades inconciliáveis.
-8. Adaptador de documento oficial guarda origem, identificador, data de publicação/recepção, hash e linhas extraídas; extração manual revisada é opção inicial se parser automático for arriscado. Não usar LLM como verdade não verificada.
-9. Persistir raw somente conforme autorização; guardar hash/referência e versão do parser quando cópia integral não for permitida.
+1. Criar interfaces mínimas por capacidade e adaptadores somente para fontes/rotas aprovadas em INT-01. Implementar adaptadores bolsai e FMP apenas para os grupos de dados homologados; sem abstração universal de provedores.
+2. Manter configuração explícita de roteamento por mercado, classe de ativo e campo. O domínio recebe observações normalizadas com proveniência; não contém nomes de endpoints, autenticação ou fórmulas proprietárias.
+3. Guardar credenciais no processo confiável definido no Gate D. Bolsai documenta autenticação por header `X-API-Key`; FMP documenta a chave no parâmetro `apikey`, que deve ser redigido de URLs, logs, traces, exceções e métricas. Nunca embutir segredos no navegador, bundle, variáveis `VITE_*`, fixtures ou commits.
+4. Usar endpoints, parâmetros, campos e versões vigentes somente depois da homologação; registrar fonte, endpoint e versão da API quando disponíveis.
+5. Aplicar timeout de conexão/leitura e prazo total; limitar tamanho de resposta, lote e concorrência conforme limites documentados por provedor.
+6. Fazer retry limitado apenas em falhas transitórias seguras, com backoff/jitter quando apropriado; não repetir 4xx permanentes nem duplicar retries entre SDK, adaptador e orquestrador.
+7. Validar payloads em runtime antes de normalizar. Classificar 401/403, 404, 429, 5xx, corpo malformado, schema drift e timeout; respeitar headers de rate limit/deprecation quando fornecidos.
+8. Mapear preço, moeda, fator de ajuste, câmbio, demonstrações e métricas com testes golden por ativo/classe e documentação da semântica. Manter dados originais e ajustados distinguíveis; não combinar períodos ou unidades inconciliáveis.
+9. Aplicar fallback apenas para pares fonte/campo aprovados em INT-01 e compatíveis semanticamente. Registrar toda troca; divergência material não pode ser ocultada por escolha automática.
+10. Adaptadores de documentos oficiais guardam origem, identificador, data de publicação/recepção, hash e linhas extraídas. Extração manual revisada é opção inicial se parser automático for arriscado. Não usar LLM como fonte de verdade não verificada.
+11. Persistir payload bruto somente conforme autorização; quando cópia integral não for permitida, guardar hash, referência, metadados e os valores normalizados que a licença permitir.
 
-**TDD:** para cada mapeamento/regra de erro, iniciar com teste que falha pelo comportamento ausente; adaptador testa fixtures/respostas representativas, não serviço pago no CI. Contrato vivo/sandbox só com autorização e necessidade.
+**TDD:** para cada mapeamento e regra de erro, iniciar com teste que falha pelo comportamento ausente; adaptadores testam fixtures/respostas representativas, não serviço pago no CI. Contrato vivo/sandbox só com autorização e necessidade.
 
-**Aceite:** respostas cobertas validam schema/semântica; adaptações mantêm proveniência e não descartam `changed`, ticker remapeado ou datas relevantes; falhas não se transformam em dado plausível; nenhum segredo aparece em cliente/log/fixture.
+**Aceite:** respostas homologadas validam schema e semântica; adaptações mantêm proveniência e não descartam revisões, mudanças de ticker ou datas relevantes; falhas não se transformam em dado plausível; fallback segue a matriz aprovada; nenhum segredo aparece no cliente, logs ou fixtures.
 
 #### INT-06 — Cadastrar posições e registrar operações realizadas
 
-**Depende de:** INT-02, INT-03, INT-04  
+**Depende de:** INT-02, INT-03, INT-04
+
 **Perfil:** P3; DAD-01/02/03, SEG-01 se houver usuário autenticado
 
 **Objetivo:** manter um histórico fiel de posições de abertura e movimentações reais sem permitir que recomendação ou preço de mercado altere a carteira automaticamente.
@@ -223,7 +254,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-07 — Atualizar dados automaticamente e recuperar coletas
 
-**Depende de:** INT-03, INT-04, INT-05  
+**Depende de:** INT-03, INT-04, INT-05
+
 **Perfil:** P5 + P3; OPS-01–03, DAD-02/03, DIST-03/04/06/07/09/10
 
 **Objetivo:** verificar os dados necessários à análise e atualizar automaticamente o que estiver ausente ou vencido, com estado e recuperação explícitos.
@@ -245,7 +277,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-08 — Calcular posição, custo, resultado, renda e exposições
 
-**Depende de:** INT-03, INT-04, INT-05, INT-06, INT-07  
+**Depende de:** INT-03, INT-04, INT-05, INT-06, INT-07
+
 **Perfil:** P3; DAD-01/04, DIST-08
 
 **Objetivo:** construir projeções puras e reproduzíveis da carteira sobre eventos aceitos e observações de mercado válidas.
@@ -269,7 +302,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-09 — Integrar carteira e dados confiáveis ao motor de decisão
 
-**Depende de:** INT-03, INT-04, INT-07, INT-08  
+**Depende de:** INT-03, INT-04, INT-07, INT-08
+
 **Perfil:** P3; DAD-04, DIST-08, TDD-01
 
 **Objetivo:** manter decisão determinística, explicável e reproduzível usando uma visão consistente da carteira e os dados de mercado/fontes disponíveis na mesma data-base.
@@ -291,7 +325,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-10 — Exibir carteira, operações, resultados e qualidade dos dados
 
-**Depende de:** INT-06, INT-08, INT-09  
+**Depende de:** INT-06, INT-08, INT-09
+
 **Perfil:** P1 + P3; SEG-01/03, DIST-02, requisitos de acessibilidade existentes
 
 **Objetivo:** permitir conferir posições e operações realizadas, entender as métricas de carteira e avaliar a qualidade dos dados que sustentaram a recomendação.
@@ -313,7 +348,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-11 — Importar operações de fonte externa (condicional)
 
-**Depende de:** INT-01, INT-02, INT-03, INT-04, INT-06  
+**Depende de:** INT-01, INT-02, INT-03, INT-04, INT-06
+
 **Perfil:** P5 + P3; P2 somente se o produto passar a expor API própria autenticada ou gestão multiusuário; SEG-01–03, DAD-03, OPS-01, DIST-02/03/04/05/10
 
 **Condição de entrada:** INT-01 identificou uma fonte autorizada, confiável, tecnicamente disponível e com identidade estável para as operações realizadas. Sem isso, registrar a tarefa como “não habilitada neste marco”; o fluxo manual de INT-06 continua válido e esta ausência não bloqueia a integração principal.
@@ -338,7 +374,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-12 — Executar verificação transversal de segurança, integração e falhas
 
-**Depende de:** INT-05, INT-06, INT-07, INT-08, INT-09, INT-10  
+**Depende de:** INT-05, INT-06, INT-07, INT-08, INT-09, INT-10
+
 **Perfil:** P3 + P5; P1 se interface tocada; P4 somente se houver fluxo real de eventos; SEG-04, OPS-01–03, DIST-10
 
 **Objetivo:** verificar fronteiras completas ativadas pela integração e reparar regressões antes da aceitação.
@@ -360,7 +397,8 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 #### INT-13 — Documentar operação, fontes, limitações e aceite do produto
 
-**Depende de:** INT-12  
+**Depende de:** INT-12
+
 **Perfil:** P3 + P5; ENG-02, OPS-02/03, DIST-10
 
 **Objetivo:** tornar instalação, operação e interpretação da integração repetíveis sem expor segredo.
@@ -411,9 +449,12 @@ Alterações 1.2: reforço de invariantes prescritivas em INT-02/INT-03 (estados
 
 ## 6. Referências normativas e técnicas
 
-- `GRAFO_DEPENDENCIAS_INTEGRACAO_DADOS.md` — DAG desta iniciativa.
+- `GRAFO_DEPENDENCIAS.md` — DAG desta iniciativa.
 - `ESCOPO_PRODUTO_MVP.md`, `AGENTS.md`, `GRAFO_DEPENDENCIAS.md`, `TASK.md` — fronteiras e implementação fictícia que continua preservada.
+- `docs/DECISAO_FONTES_DADOS.md` — roteamento provisório e gates de homologação de bolsai, FMP e fontes oficiais.
 - `Politica_Decisao_Motor_Investimentos_v1.md` — fonte de requisitos financeiros; não alterar por conveniência do provedor.
 - `MANUAL_PADRAO_ENGENHARIA(1).md` e `PERFIS_PROJETOS_SISTEMAS_DISTRIBUIDOS(2).md` — regras de engenharia obrigatórias.
-- Brapi: [OpenAPI atual](https://brapi.dev/docs/openapi), [quote/ações](https://brapi.dev/docs/acoes), [dados financeiros](https://brapi.dev/docs/acoes/dados-financeiros), [moedas](https://brapi.dev/docs/moedas), [versionamento](https://brapi.dev/docs/versioning). A documentação atual orienta novas integrações a usar `/api/v2`; a cobertura e os termos concretos devem ser revistos no INT-01.
-- Candidatos oficiais a validar: [CVM — dados abertos](https://www.gov.br/cvm/pt-br/centrais-de-conteudo/dados-abertos-cvm), [Banco Central — PTAX API](https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios), [B3 — cotações históricas](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/). A referência não assegura licença, gratuidade, disponibilidade por API ou permissão de retenção/redistribuição.
+- `docs/CONTRATOS_INT02.md` — schemas, semântica e invariantes runtime da INT-02.
+- bolsai: [documentação oficial](https://api.usebolsai.com/docs) e [OpenAPI](https://api.usebolsai.com/openapi.json); rotas, planos e respostas autenticadas estão em `docs/VIABILIDADE_FONTES_INT01.md`; nenhuma fonte foi homologada.
+- FMP: [documentação oficial](https://site.financialmodelingprep.com/developer/docs), [quickstart/autenticação](https://site.financialmodelingprep.com/developer/docs/quickstart), [planos](https://site.financialmodelingprep.com/developer/docs/pricing) e [termos](https://site.financialmodelingprep.com/terms-of-service); API não chamada sem autorização escrita para integração.
+- Fontes complementares consultadas em INT-01: [CVM — informe de FII estruturado](https://dados.cvm.gov.br/dataset/fii-doc-inf_trimestral), [BCB — PTAX](https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios), [B3 — cotações históricas](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/cotacoes-historicas/) e [Schwab — SCHD](https://www.schwabassetmanagement.com/products/schd). Consulta documental não substitui cobertura autenticada ou licença aplicável.
